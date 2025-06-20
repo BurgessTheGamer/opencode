@@ -27,9 +27,13 @@ import { TaskTool } from "../tool/task"
 export namespace Provider {
   const log = Log.create({ service: "provider" })
 
-  type CustomLoader = (
-    provider: ModelsDev.Provider,
-  ) => Promise<Record<string, any> | false>
+  type CustomLoader = (provider: ModelsDev.Provider) => Promise<
+    | {
+        getModel?: (sdk: any, modelID: string) => Promise<any>
+        options: Record<string, any>
+      }
+    | false
+  >
 
   type Source = "env" | "config" | "custom" | "api"
 
@@ -44,34 +48,52 @@ export namespace Provider {
         }
       }
       return {
-        apiKey: "",
-        async fetch(input: any, init: any) {
-          const access = await AuthAnthropic.access()
-          const headers = {
-            ...init.headers,
-            authorization: `Bearer ${access}`,
-            "anthropic-beta": "oauth-2025-04-20",
-          }
-          delete headers["x-api-key"]
-          return fetch(input, {
-            ...init,
-            headers,
-          })
+        options: {
+          apiKey: "",
+          async fetch(input: any, init: any) {
+            const access = await AuthAnthropic.access()
+            const headers = {
+              ...init.headers,
+              authorization: `Bearer ${access}`,
+              "anthropic-beta": "oauth-2025-04-20",
+            }
+            delete headers["x-api-key"]
+            return fetch(input, {
+              ...init,
+              headers,
+            })
+          },
         },
       }
     },
+    openai: async () => {
+      return {
+        async getModel(sdk: any, modelID: string) {
+          return sdk.responses(modelID)
+        },
+        options: {},
+      }
+    },
     "amazon-bedrock": async () => {
-      if (!process.env["AWS_PROFILE"])
-        return {
-          region: process.env["AWS_REGION"] ?? "us-east-1",
-        }
+      if (!process.env["AWS_PROFILE"]) false
+
+      const region = process.env["AWS_REGION"] ?? "us-east-1"
 
       const { fromNodeProviderChain } = await import(
         await BunProc.install("@aws-sdk/credential-providers")
       )
       return {
-        region: process.env["AWS_REGION"] ?? "us-east-1",
-        credentialProvider: fromNodeProviderChain(),
+        options: {
+          region,
+          credentialProvider: fromNodeProviderChain(),
+        },
+        async getModel(sdk: any, modelID: string) {
+          if (modelID.includes("claude")) {
+            const prefix = region.split("-")[0]
+            modelID = `${prefix}.${modelID}`
+          }
+          return sdk.languageModel(modelID)
+        },
       }
     },
   }
@@ -84,6 +106,7 @@ export namespace Provider {
       [providerID: string]: {
         source: Source
         info: ModelsDev.Provider
+        getModel?: (sdk: any, modelID: string) => Promise<any>
         options: Record<string, any>
       }
     } = {}
@@ -99,6 +122,7 @@ export namespace Provider {
       id: string,
       options: Record<string, any>,
       source: Source,
+      getModel?: (sdk: any, modelID: string) => Promise<any>,
     ) {
       const provider = providers[id]
       if (!provider) {
@@ -114,6 +138,7 @@ export namespace Provider {
       }
       provider.options = mergeDeep(provider.options, options)
       provider.source = source
+      provider.getModel = getModel ?? provider.getModel
     }
 
     const configProviders = Object.entries(config.provider ?? {})
@@ -177,7 +202,8 @@ export namespace Provider {
     for (const [providerID, fn] of Object.entries(CUSTOM_LOADERS)) {
       if (disabled.has(providerID)) continue
       const result = await fn(database[providerID])
-      if (result) mergeProvider(providerID, result, "custom")
+      if (result)
+        mergeProvider(providerID, result.options, "custom", result.getModel)
     }
 
     // load config
@@ -239,17 +265,10 @@ export namespace Provider {
     if (!info) throw new ModelNotFoundError({ providerID, modelID })
     const sdk = await getSDK(provider.info)
 
-    const transformedModelID = transformModelID(provider, modelID)
-    if (modelID !== transformedModelID) {
-      log.info("transformed model", { modelID: transformedModelID })
-    }
-
     try {
-      const language =
-        // @ts-expect-error
-        "responses" in sdk
-          ? sdk.responses(transformedModelID)
-          : sdk.languageModel(transformedModelID)
+      const language = provider.getModel
+        ? await provider.getModel(sdk, modelID)
+        : sdk.languageModel(modelID)
       log.info("found", { providerID, modelID })
       s.models.set(key, {
         info,
@@ -269,30 +288,6 @@ export namespace Provider {
           { cause: e },
         )
       throw e
-    }
-  }
-
-  /**
-   * Some providers like AWS Bedrock require regional model IDs to work properly
-   * @example us.anthropic.claude-sonnet-4-20250514-v1:0
-   */
-  function transformModelID(
-    provider: {
-      source: Source
-      info: ModelsDev.Provider
-      options: Record<string, any>
-    },
-    modelID: string,
-  ) {
-    switch (provider.info.id) {
-      case "amazon-bedrock":
-        if (modelID.includes("claude")) {
-          const regionPrefix = provider.options["region"]?.split("-")[0] || "us"
-          return `${regionPrefix}.${modelID}`
-        }
-        return modelID
-      default:
-        return modelID
     }
   }
 
