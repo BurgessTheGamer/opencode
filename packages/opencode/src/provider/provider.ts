@@ -239,7 +239,7 @@ export namespace Provider {
     if (!info) throw new ModelNotFoundError({ providerID, modelID })
     const sdk = await getSDK(provider.info)
 
-    const transformedModelID = await transformModelID(provider, modelID)
+    const transformedModelID = transformModelID(provider, modelID)
     if (modelID !== transformedModelID) {
       log.info("transformed model", { modelID: transformedModelID })
     }
@@ -276,7 +276,7 @@ export namespace Provider {
    * Some providers like AWS Bedrock require regional model IDs to work properly
    * @example us.anthropic.claude-sonnet-4-20250514-v1:0
    */
-  async function transformModelID(
+  function transformModelID(
     provider: {
       source: Source
       info: ModelsDev.Provider
