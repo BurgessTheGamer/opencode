@@ -61,7 +61,11 @@ export namespace Provider {
       }
     },
     "amazon-bedrock": async () => {
-      if (!process.env["AWS_PROFILE"]) return false
+      if (!process.env["AWS_PROFILE"])
+        return {
+          region: process.env["AWS_REGION"] ?? "us-east-1",
+        }
+
       const { fromNodeProviderChain } = await import(
         await BunProc.install("@aws-sdk/credential-providers")
       )
@@ -235,10 +239,17 @@ export namespace Provider {
     if (!info) throw new ModelNotFoundError({ providerID, modelID })
     const sdk = await getSDK(provider.info)
 
+    const transformedModelID = await transformModelID(provider, modelID)
+    if (modelID !== transformedModelID) {
+      log.info("transformed model", { modelID: transformedModelID })
+    }
+
     try {
       const language =
         // @ts-expect-error
-        "responses" in sdk ? sdk.responses(modelID) : sdk.languageModel(modelID)
+        "responses" in sdk
+          ? sdk.responses(transformedModelID)
+          : sdk.languageModel(transformedModelID)
       log.info("found", { providerID, modelID })
       s.models.set(key, {
         info,
@@ -258,6 +269,30 @@ export namespace Provider {
           { cause: e },
         )
       throw e
+    }
+  }
+
+  /**
+   * Some providers like AWS Bedrock require regional model IDs to work properly
+   * @example us.anthropic.claude-sonnet-4-20250514-v1:0
+   */
+  async function transformModelID(
+    provider: {
+      source: Source
+      info: ModelsDev.Provider
+      options: Record<string, any>
+    },
+    modelID: string,
+  ) {
+    switch (provider.info.id) {
+      case "amazon-bedrock":
+        if (modelID.includes("claude")) {
+          const regionPrefix = provider.options["region"]?.split("-")[0] || "us"
+          return `${regionPrefix}.${modelID}`
+        }
+        return modelID
+      default:
+        return modelID
     }
   }
 
