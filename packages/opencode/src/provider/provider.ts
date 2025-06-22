@@ -19,6 +19,7 @@ import type { Tool } from "../tool/tool"
 import { WriteTool } from "../tool/write"
 import { TodoReadTool, TodoWriteTool } from "../tool/todo"
 import { AuthAnthropic } from "../auth/anthropic"
+import { AuthGithubCopilot } from "../auth/github-copilot"
 import { ModelsDev } from "./models"
 import { NamedError } from "../util/error"
 import { Auth } from "../auth"
@@ -58,6 +59,50 @@ export namespace Provider {
               "anthropic-beta": "oauth-2025-04-20",
             }
             delete headers["x-api-key"]
+            return fetch(input, {
+              ...init,
+              headers,
+            })
+          },
+        },
+      }
+    },
+    async "github-copilot"(provider) {
+      const tokenResult = await AuthGithubCopilot.getCopilotApiToken()
+      if (!tokenResult) return false
+
+      const { token, apiEndpoint } = tokenResult
+
+      // If provider exists (from models.dev), set costs to 0
+      if (provider && provider.models) {
+        for (const model of Object.values(provider.models)) {
+          model.cost = {
+            input: 0,
+            output: 0,
+          }
+        }
+      }
+
+      return {
+        options: {
+          apiKey: "",
+          baseURL: apiEndpoint,
+          async fetch(input: any, init: any) {
+            const currentToken = await AuthGithubCopilot.access()
+            if (!currentToken) {
+              throw new Error("GitHub Copilot authentication expired")
+            }
+
+            const headers = {
+              ...init.headers,
+              Authorization: `Bearer ${currentToken}`,
+              "User-Agent": "GithubCopilot/1.155.0",
+              "Editor-Version": "vscode/1.85.1",
+              "Editor-Plugin-Version": "copilot/1.155.0",
+            }
+
+            delete headers["x-api-key"]
+
             return fetch(input, {
               ...init,
               headers,
@@ -208,8 +253,9 @@ export namespace Provider {
     for (const [providerID, fn] of Object.entries(CUSTOM_LOADERS)) {
       if (disabled.has(providerID)) continue
       const result = await fn(database[providerID])
-      if (result)
+      if (result) {
         mergeProvider(providerID, result.options, "custom", result.getModel)
+      }
     }
 
     // load config
