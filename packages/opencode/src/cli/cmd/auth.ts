@@ -156,27 +156,29 @@ export const AuthLoginCommand = cmd({
       await new Promise((resolve) => setTimeout(resolve, 10))
       const deviceInfo = await AuthGithubCopilot.authorize()
 
-      prompts.note(`Please visit: ${deviceInfo.verification_uri}`)
-      prompts.note(`Enter code: ${deviceInfo.user_code}`)
+      prompts.note(
+        `Please visit: ${deviceInfo.verification}\nEnter code: ${deviceInfo.user}`,
+      )
 
-      const confirm = await prompts.confirm({
-        message: "Press Enter after completing authentication in browser",
-      })
+      const spinner = prompts.spinner()
+      spinner.start("Waiting for authorization...")
 
-      if (prompts.isCancel(confirm)) throw new UI.CancelledError()
-
-      try {
-        await AuthGithubCopilot.pollForToken(
-          deviceInfo.device_code,
-          deviceInfo.interval,
+      while (true) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, deviceInfo.interval * 1000),
         )
-        await AuthGithubCopilot.getCopilotApiToken()
-        prompts.log.success("GitHub Copilot login successful")
-      } catch (error) {
-        prompts.log.error(
-          `Login failed: ${error instanceof Error ? error.message : String(error)}`,
-        )
+        const status = await AuthGithubCopilot.poll(deviceInfo.device)
+        if (status === "pending") continue
+        if (status === "complete") {
+          spinner.stop("Login successful")
+          break
+        }
+        if (status === "failed") {
+          spinner.stop("Failed to authorize", 1)
+          break
+        }
       }
+
       prompts.outro("Done")
       return
     }

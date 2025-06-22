@@ -1,4 +1,6 @@
+import { z } from "zod"
 import { Auth } from "./index"
+import { NamedError } from "../util/error"
 
 export namespace AuthGithubCopilot {
   const CLIENT_ID = "Iv1.b507a08c87ecfe98"
@@ -33,7 +35,7 @@ export namespace AuthGithubCopilot {
     const deviceResponse = await fetch(DEVICE_CODE_URL, {
       method: "POST",
       headers: {
-        "Accept": "application/json",
+        Accept: "application/json",
         "Content-Type": "application/json",
         "User-Agent": "GithubCopilot/1.155.0",
       },
@@ -42,146 +44,111 @@ export namespace AuthGithubCopilot {
         scope: "read:user",
       }),
     })
-
-    if (!deviceResponse.ok) {
-      throw new DeviceCodeError("Failed to get device code")
-    }
-
     const deviceData: DeviceCodeResponse = await deviceResponse.json()
-
     return {
-      device_code: deviceData.device_code,
-      user_code: deviceData.user_code,
-      verification_uri: deviceData.verification_uri,
+      device: deviceData.device_code,
+      user: deviceData.user_code,
+      verification: deviceData.verification_uri,
       interval: deviceData.interval || 5,
-      expires_in: deviceData.expires_in,
+      expiry: deviceData.expires_in,
     }
   }
 
-  export async function pollForToken(device_code: string, interval: number = 5, maxAttempts: number = 36) {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const response = await fetch(ACCESS_TOKEN_URL, {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-          "User-Agent": "GithubCopilot/1.155.0",
-        },
-        body: JSON.stringify({
-          client_id: CLIENT_ID,
-          device_code,
-          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-        }),
+  export async function poll(device_code: string) {
+    const response = await fetch(ACCESS_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "GithubCopilot/1.155.0",
+      },
+      body: JSON.stringify({
+        client_id: CLIENT_ID,
+        device_code,
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+      }),
+    })
+
+    if (!response.ok) return "failed"
+
+    const data: AccessTokenResponse = await response.json()
+
+    if (data.access_token) {
+      // Store the GitHub OAuth token
+      await Auth.set("github-copilot", {
+        type: "oauth",
+        refresh: data.access_token,
+        access: "",
+        expires: 0,
       })
-
-      if (!response.ok) {
-        throw new TokenExchangeError("Failed to poll for access token")
-      }
-
-      const data: AccessTokenResponse = await response.json()
-
-      if (data.access_token) {
-        // Store the GitHub OAuth token
-        await Auth.set("github-copilot-oauth", {
-          type: "api",
-          key: data.access_token,
-        })
-        return data.access_token
-      }
-
-      if (data.error === "authorization_pending") {
-        await new Promise(resolve => setTimeout(resolve, interval * 1000))
-        continue
-      }
-
-      if (data.error) {
-        throw new TokenExchangeError(`OAuth error: ${data.error}`)
-      }
+      return "complete"
     }
 
-    throw new TokenExchangeError("Polling timeout exceeded")
+    if (data.error === "authorization_pending") return "pending"
+
+    if (data.error) return "failed"
+
+    return "pending"
   }
 
-  export async function getCopilotApiToken() {
-    const oauthInfo = await Auth.get("github-copilot-oauth")
-    if (!oauthInfo || oauthInfo.type !== "api") {
-      throw new AuthenticationError("No GitHub OAuth token found")
-    }
-
-    // Check if we have a cached Copilot API token that's still valid
-    const copilotInfo = await Auth.get("github-copilot")
-    if (copilotInfo && copilotInfo.type === "oauth" && copilotInfo.expires > Date.now()) {
-      return {
-        token: copilotInfo.access,
-        apiEndpoint: "https://api.githubcopilot.com",
-      }
-    }
+  export async function access() {
+    const info = await Auth.get("github-copilot")
+    if (!info || info.type !== "oauth") return
+    if (info.access && info.expires > Date.now())
+      return { access: info.access, api: "https://api.githubcopilot.com" }
 
     // Get new Copilot API token
     const response = await fetch(COPILOT_API_KEY_URL, {
       headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${oauthInfo.key}`,
+        Accept: "application/json",
+        Authorization: `Bearer ${info.refresh}`,
         "User-Agent": "GithubCopilot/1.155.0",
         "Editor-Version": "vscode/1.85.1",
         "Editor-Plugin-Version": "copilot/1.155.0",
       },
     })
 
-    if (!response.ok) {
-      throw new CopilotTokenError("Failed to get Copilot API token")
-    }
+    if (!response.ok) return
 
     const tokenData: CopilotTokenResponse = await response.json()
 
     // Store the Copilot API token
     await Auth.set("github-copilot", {
       type: "oauth",
-      refresh: "", // GitHub Copilot doesn't use refresh tokens
+      refresh: info.refresh,
       access: tokenData.token,
-      expires: tokenData.expires_at * 1000, // Convert to milliseconds
+      expires: tokenData.expires_at * 1000,
     })
 
     return {
-      token: tokenData.token,
-      apiEndpoint: tokenData.endpoints.api,
+      access: tokenData.token,
+      api: tokenData.endpoints.api,
     }
   }
 
-  export async function access() {
-    try {
-      const result = await getCopilotApiToken()
-      return result.token
-    } catch (error) {
-      return null
-    }
-  }
+  export const DeviceCodeError = NamedError.create(
+    "DeviceCodeError",
+    z.object({}),
+  )
 
-  export class DeviceCodeError extends Error {
-    constructor(message: string) {
-      super(message)
-      this.name = "DeviceCodeError"
-    }
-  }
+  export const TokenExchangeError = NamedError.create(
+    "TokenExchangeError",
+    z.object({
+      message: z.string(),
+    }),
+  )
 
-  export class TokenExchangeError extends Error {
-    constructor(message: string) {
-      super(message)
-      this.name = "TokenExchangeError"
-    }
-  }
+  export const AuthenticationError = NamedError.create(
+    "AuthenticationError",
+    z.object({
+      message: z.string(),
+    }),
+  )
 
-  export class AuthenticationError extends Error {
-    constructor(message: string) {
-      super(message)
-      this.name = "AuthenticationError"
-    }
-  }
-
-  export class CopilotTokenError extends Error {
-    constructor(message: string) {
-      super(message)
-      this.name = "CopilotTokenError"
-    }
-  }
+  export const CopilotTokenError = NamedError.create(
+    "CopilotTokenError",
+    z.object({
+      message: z.string(),
+    }),
+  )
 }

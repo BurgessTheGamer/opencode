@@ -67,13 +67,10 @@ export namespace Provider {
         },
       }
     },
-    async "github-copilot"(provider) {
-      const tokenResult = await AuthGithubCopilot.getCopilotApiToken()
-      if (!tokenResult) return false
+    "github-copilot": async (provider) => {
+      const info = await AuthGithubCopilot.access()
+      if (!info) return false
 
-      const { apiEndpoint } = tokenResult
-
-      // If provider exists (from models.dev), set costs to 0
       if (provider && provider.models) {
         for (const model of Object.values(provider.models)) {
           model.cost = {
@@ -86,23 +83,18 @@ export namespace Provider {
       return {
         options: {
           apiKey: "",
-          baseURL: apiEndpoint,
+          baseURL: info.api,
           async fetch(input: any, init: any) {
-            const currentToken = await AuthGithubCopilot.access()
-            if (!currentToken) {
-              throw new Error("GitHub Copilot authentication expired")
-            }
-
+            const token = await AuthGithubCopilot.access()
+            if (!token) throw new Error("GitHub Copilot authentication expired")
             const headers = {
               ...init.headers,
-              Authorization: `Bearer ${currentToken}`,
+              Authorization: `Bearer ${token.access}`,
               "User-Agent": "GithubCopilot/1.155.0",
               "Editor-Version": "vscode/1.85.1",
               "Editor-Plugin-Version": "copilot/1.155.0",
             }
-
             delete headers["x-api-key"]
-
             return fetch(input, {
               ...init,
               headers,
