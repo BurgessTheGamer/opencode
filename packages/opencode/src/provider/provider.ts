@@ -83,13 +83,12 @@ export namespace Provider {
       return {
         options: {
           apiKey: "",
-          baseURL: info.api,
           async fetch(input: any, init: any) {
             const token = await AuthGithubCopilot.access()
             if (!token) throw new Error("GitHub Copilot authentication expired")
             const headers = {
               ...init.headers,
-              Authorization: `Bearer ${token.access}`,
+              Authorization: `Bearer ${token}`,
               "User-Agent": "GithubCopilot/1.155.0",
               "Editor-Version": "vscode/1.85.1",
               "Editor-Plugin-Version": "copilot/1.155.0",

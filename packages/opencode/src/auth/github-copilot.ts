@@ -94,8 +94,7 @@ export namespace AuthGithubCopilot {
   export async function access() {
     const info = await Auth.get("github-copilot")
     if (!info || info.type !== "oauth") return
-    if (info.access && info.expires > Date.now())
-      return { access: info.access, api: "https://api.githubcopilot.com" }
+    if (info.access && info.expires > Date.now()) return info.access
 
     // Get new Copilot API token
     const response = await fetch(COPILOT_API_KEY_URL, {
@@ -120,10 +119,7 @@ export namespace AuthGithubCopilot {
       expires: tokenData.expires_at * 1000,
     })
 
-    return {
-      access: tokenData.token,
-      api: tokenData.endpoints.api,
-    }
+    return tokenData.token
   }
 
   export const DeviceCodeError = NamedError.create(
