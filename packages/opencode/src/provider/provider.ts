@@ -71,7 +71,7 @@ export namespace Provider {
       const tokenResult = await AuthGithubCopilot.getCopilotApiToken()
       if (!tokenResult) return false
 
-      const { token, apiEndpoint } = tokenResult
+      const { apiEndpoint } = tokenResult
 
       // If provider exists (from models.dev), set costs to 0
       if (provider && provider.models) {
