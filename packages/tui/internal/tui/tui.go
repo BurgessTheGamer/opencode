@@ -221,7 +221,7 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		updatedEditor, cmd := a.editor.Update(msg)
 		a.editor = updatedEditor.(chat.EditorComponent)
 		return a, cmd
-	case tea.MouseWheelMsg:
+	case tea.MouseWheelMsg, tea.MouseClickMsg, tea.MouseReleaseMsg, tea.MouseMotionMsg:
 		if a.modal != nil {
 			return a, nil
 		}
