@@ -93,6 +93,8 @@ var BUGGED_SCROLL_KEYS = map[string]bool{
 	"7": true,
 	"8": true,
 	"9": true,
+	"M": true,
+	"m": true,
 	"[": true,
 	";": true,
 }
