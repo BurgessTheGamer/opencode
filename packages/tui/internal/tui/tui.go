@@ -105,14 +105,16 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		keyString := msg.String()
-		if time.Since(a.lastScroll) < time.Millisecond*100 && BUGGED_SCROLL_KEYS[keyString] {
+		// Log all key presses for debugging
+		slog.Debug("KeyPress received", "string", keyString)
+
+		// 1. Workaround for scroll bug
+		if time.Since(a.lastScroll) < 100*time.Millisecond && BUGGED_SCROLL_KEYS[keyString] {
 			return a, nil
 		}
-
 		// 1. Handle active modal
 		if a.modal != nil {
-			switch keyString {
-			// Escape always closes current modal
+			switch keyString { // Escape always closes current modal
 			case "esc", "ctrl+c":
 				cmd := a.modal.Close()
 				a.modal = nil
@@ -229,6 +231,7 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// 7. Check again for commands that don't require leader (excluding interrupt when busy)
 		matches := a.app.Commands.Matches(msg, a.isLeaderSequence)
+		slog.Debug("Command matches", "count", len(matches), "key", msg.String())
 		if len(matches) > 0 {
 			// Skip interrupt key if we're in debounce mode and app is busy
 			if interruptCommand.Matches(msg, a.isLeaderSequence) && a.app.IsBusy() && a.interruptKeyState != InterruptKeyIdle {
@@ -246,6 +249,13 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Track scroll time for MouseWheelMsg (from dev branch)
 		if _, ok := msg.(tea.MouseWheelMsg); ok {
 			a.lastScroll = time.Now()
+		}
+		// Log mouse events for debugging
+		switch m := msg.(type) {
+		case tea.MouseClickMsg:
+			slog.Debug("TUI: Mouse click", "x", m.X, "y", m.Y, "button", m.Button)
+		case tea.MouseMotionMsg:
+			// Don't log motion events as they're too frequent
 		}
 		if a.modal != nil {
 			return a, nil
@@ -625,6 +635,17 @@ func (a appModel) executeCommand(command commands.Command) (tea.Model, tea.Cmd) 
 		cmds = append(cmds, cmd)
 	case commands.MessagesHalfPageDownCommand:
 		updated, cmd := a.messages.HalfPageDown()
+		a.messages = updated.(chat.MessagesComponent)
+		cmds = append(cmds, cmd)
+	case commands.SelectionCopyCommand:
+		slog.Debug("SelectionCopyCommand triggered", "hasSelection", a.messages.HasSelection())
+		if a.messages.HasSelection() {
+			updated, cmd := a.messages.CopySelection()
+			a.messages = updated.(chat.MessagesComponent)
+			cmds = append(cmds, cmd)
+		}
+	case commands.SelectionAllCommand:
+		updated, cmd := a.messages.SelectAll()
 		a.messages = updated.(chat.MessagesComponent)
 		cmds = append(cmds, cmd)
 	case commands.AppExitCommand:
