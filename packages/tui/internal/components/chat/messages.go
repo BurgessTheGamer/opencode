@@ -1069,13 +1069,24 @@ func (m *messagesComponent) highlightLineSection(line string, startCol, endCol i
 		return line
 	}
 
+	// Convert to runes to handle UTF-8 properly
+	runes := []rune(stripped)
+
+	// Adjust columns to rune positions
+	if startCol > len(runes) {
+		startCol = len(runes)
+	}
+	if endCol > len(runes) {
+		endCol = len(runes)
+	}
+
 	// Calculate the content boundaries to prevent highlight spillover
 	// Find where content actually starts and ends (non-space characters)
 	contentStart := 0
-	contentEnd := len(stripped)
+	contentEnd := len(runes)
 
 	// Find first non-space character
-	for i, ch := range stripped {
+	for i, ch := range runes {
 		if ch != ' ' {
 			contentStart = i
 			break
@@ -1083,8 +1094,8 @@ func (m *messagesComponent) highlightLineSection(line string, startCol, endCol i
 	}
 
 	// Find last non-space character
-	for i := len(stripped) - 1; i >= 0; i-- {
-		if stripped[i] != ' ' {
+	for i := len(runes) - 1; i >= 0; i-- {
+		if runes[i] != ' ' {
 			contentEnd = i + 1
 			break
 		}
@@ -1094,30 +1105,32 @@ func (m *messagesComponent) highlightLineSection(line string, startCol, endCol i
 	actualStart := max(startCol, contentStart)
 	actualEnd := min(endCol, contentEnd)
 
-	// Build the result
+	// Build the result using runes
 	before := ""
 	selected := ""
 	after := ""
 
 	if actualStart > 0 {
-		before = stripped[:actualStart]
+		before = string(runes[:actualStart])
 	}
 
 	if actualEnd > actualStart {
-		selected = stripped[actualStart:actualEnd]
+		selected = string(runes[actualStart:actualEnd])
 	}
 
-	if actualEnd < len(stripped) {
-		after = stripped[actualEnd:]
+	if actualEnd < len(runes) {
+		after = string(runes[actualEnd:])
 	}
 
 	// Apply highlighting
 	if selected != "" {
-		selected = style.Render(selected)
+		// First reset any existing styles, then apply highlight
+		selected = "\x1b[0m" + style.Render(selected) + "\x1b[0m"
 	}
 
 	return before + selected + after
 }
+
 func (m *messagesComponent) applySelectionOverlay(content string) string {
 	if !m.selection.Active {
 		return content
