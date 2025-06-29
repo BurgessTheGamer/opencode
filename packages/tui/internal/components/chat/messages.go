@@ -53,16 +53,20 @@ type TextSelection struct {
 }
 
 type messagesComponent struct {
-	width, height      int
 	app                *app.App
+	width              int
+	height             int
 	viewport           viewport.Model
-	spinner            spinner.Model
 	attachments        viewport.Model
+	spinner            spinner.Model
 	commands           commands.CommandsComponent
 	cache              *MessageCache
 	rendering          bool
 	showToolDetails    bool
 	tail               bool
+	scrollbarVisible   bool
+	scrollbarThumb     int
+	scrollbarHeight    int
 	scrollbarDragging  bool
 	scrollbarDragStart int
 	selection          TextSelection
@@ -697,6 +701,9 @@ func (m *messagesComponent) CopySelection() (tea.Model, tea.Cmd) {
 	// Strip ANSI codes for clean clipboard content
 	cleanText := ansi.Strip(text)
 
+	// Clean up formatting - remove excessive spaces and border characters
+	cleanText = m.cleanExtractedText(cleanText)
+
 	// Clear selection after copy
 	m.selection.Active = false
 
@@ -711,6 +718,90 @@ func (m *messagesComponent) CopySelection() (tea.Model, tea.Cmd) {
 	}
 }
 
+// cleanExtractedText removes excessive spacing and cleans up the text
+func (m *messagesComponent) cleanExtractedText(text string) string {
+	lines := strings.Split(text, "\n")
+	cleaned := make([]string, 0, len(lines))
+
+	// First pass: clean each line
+	for _, line := range lines {
+		// Remove all border characters and clean up
+		cleaned_line := line
+
+		// Remove common border patterns
+		borderChars := []string{"┃", "│", "|", "║", "┆", "┊"}
+		for _, border := range borderChars {
+			// Remove from start
+			for strings.HasPrefix(strings.TrimSpace(cleaned_line), border) {
+				cleaned_line = strings.TrimSpace(cleaned_line)
+				cleaned_line = strings.TrimPrefix(cleaned_line, border)
+			}
+			// Remove from end
+			for strings.HasSuffix(strings.TrimSpace(cleaned_line), border) {
+				cleaned_line = strings.TrimSpace(cleaned_line)
+				cleaned_line = strings.TrimSuffix(cleaned_line, border)
+			}
+		}
+
+		// Trim spaces after border removal
+		cleaned_line = strings.TrimSpace(cleaned_line)
+
+		// Skip empty lines at the beginning
+		if cleaned_line == "" && len(cleaned) == 0 {
+			continue
+		}
+
+		cleaned = append(cleaned, cleaned_line)
+	}
+
+	// Remove trailing empty lines
+	for len(cleaned) > 0 && cleaned[len(cleaned)-1] == "" {
+		cleaned = cleaned[:len(cleaned)-1]
+	}
+
+	// For code blocks or structured text, preserve some indentation
+	// but for regular text, just join with spaces for paragraphs
+	result := strings.Join(cleaned, "\n")
+
+	// If it looks like a paragraph (no code indicators), format as paragraph
+	if !strings.Contains(result, "```") && !strings.Contains(result, "    ") && !strings.Contains(result, "\t") {
+		// Check if this looks like regular prose
+		isProse := true
+		for _, line := range cleaned {
+			// If any line starts with special characters, it's probably not prose
+			if len(line) > 0 && (line[0] == '-' || line[0] == '*' ||
+				strings.HasPrefix(line, "•") || strings.HasPrefix(line, "1.") || strings.HasPrefix(line, "2.")) {
+				isProse = false
+				break
+			}
+		}
+
+		if isProse && len(cleaned) > 1 {
+			// Join lines into a paragraph, preserving paragraph breaks (double newlines)
+			paragraphs := []string{}
+			currentParagraph := []string{}
+
+			for _, line := range cleaned {
+				if line == "" {
+					if len(currentParagraph) > 0 {
+						paragraphs = append(paragraphs, strings.Join(currentParagraph, " "))
+						currentParagraph = []string{}
+					}
+				} else {
+					currentParagraph = append(currentParagraph, line)
+				}
+			}
+
+			if len(currentParagraph) > 0 {
+				paragraphs = append(paragraphs, strings.Join(currentParagraph, " "))
+			}
+
+			result = strings.Join(paragraphs, "\n\n")
+		}
+	}
+
+	return result
+}
 func (m *messagesComponent) SelectAll() (tea.Model, tea.Cmd) {
 	// Select all content in viewport
 	content := m.viewport.View()
@@ -861,7 +952,6 @@ func (m *messagesComponent) getSelectedText() string {
 	}
 
 	var selected strings.Builder
-
 	// Single line selection
 	if m.selection.StartLine == m.selection.EndLine {
 		if m.selection.StartLine < len(m.rawContent) {
