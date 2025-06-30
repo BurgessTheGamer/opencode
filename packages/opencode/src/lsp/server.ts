@@ -92,5 +92,74 @@ export namespace LSPServer {
         }
       },
     },
+    {
+      id: "aiken",
+      extensions: [".ak"],
+      async spawn() {
+        // Check if aiken is already installed
+        let bin = Bun.which("aiken", {
+          PATH: process.env["PATH"] + ":" + Global.Path.bin,
+        })
+
+        if (!bin) {
+          log.info("Installing Aiken language server...")
+
+          // Use bun x to run aikup without global installation
+          const proc = Bun.spawn({
+            cmd: [BunProc.which(), "x", "@aiken-lang/aikup"],
+            env: {
+              ...process.env,
+              AIKUP_ROOT: Global.Path.data, // Install to opencode's data directory
+            },
+            stdout: "pipe",
+            stderr: "pipe",
+          })
+
+          const exitCode = await proc.exited
+          if (exitCode !== 0) {
+            const stderr = await new Response(proc.stderr).text()
+            log.error("Failed to install Aiken", { stderr })
+            throw new Error("Failed to install Aiken language server")
+          }
+
+          // After aikup installation, aiken should be available
+          bin = Bun.which("aiken", {
+            PATH: [
+              path.join(Global.Path.data, "bin"),
+              Global.Path.bin,
+              process.env["PATH"] || "",
+            ].join(":"),
+          })
+
+          if (!bin) {
+            // Fallback: check common installation paths
+            const possiblePaths = [
+              path.join(Global.Path.data, "bin", "aiken"),
+              path.join(process.env["HOME"] || "", ".aiken", "bin", "aiken"),
+              path.join(Global.Path.bin, "aiken"),
+            ]
+
+            for (const p of possiblePaths) {
+              if (await Bun.file(p).exists()) {
+                bin = p
+                break
+              }
+            }
+          }
+
+          if (!bin) {
+            throw new Error("Aiken binary not found after installation")
+          }
+
+          log.info("Aiken installed successfully", { bin })
+        }
+
+        log.info("Starting Aiken language server", { bin })
+
+        return {
+          process: spawn(bin, ["lsp"]),
+        }
+      },
+    },
   ]
 }
