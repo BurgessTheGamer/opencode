@@ -1109,6 +1109,28 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.PasteMsg:
 		m.insertRunesFromUserInput([]rune(msg))
 
+	case tea.MouseWheelMsg:
+		// Handle mouse wheel scrolling when content exceeds MaxHeight
+		if m.MaxHeight > 0 && m.LineCount() > m.MaxHeight {
+			scrollAmount := 3 // Scroll 3 lines per wheel tick
+
+			// Check Y field for direction (negative = up, positive = down)
+			if msg.Y < 0 {
+				// Scroll up
+				m.scrollOffset = max(0, m.scrollOffset-scrollAmount)
+			} else if msg.Y > 0 {
+				// Scroll down
+				maxScroll := max(0, m.LineCount()-m.MaxHeight)
+				m.scrollOffset = min(maxScroll, m.scrollOffset+scrollAmount)
+			}
+
+			// Mark as manual scrolling to prevent cursor from forcing view
+			m.manualScrolling = true
+
+			// Return immediately without updating cursor
+			return m, nil
+		}
+
 	case tea.KeyPressMsg:
 		// Reset manual scrolling when user types or navigates
 		m.manualScrolling = false
