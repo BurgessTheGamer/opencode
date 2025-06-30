@@ -186,6 +186,15 @@ func (m *editorComponent) SetSize(width, height int) tea.Cmd {
 }
 
 func (m *editorComponent) Lines() int {
+	// If MaxHeight is set, grow naturally up to MaxHeight, then stay fixed
+	if m.textarea.MaxHeight > 0 {
+		contentLines := m.textarea.LineCount()
+		if contentLines <= m.textarea.MaxHeight {
+			return contentLines
+		} else {
+			return m.textarea.MaxHeight
+		}
+	}
 	return m.textarea.LineCount()
 }
 
@@ -328,6 +337,9 @@ func createTextArea(existing *textarea.Model) textarea.Model {
 	ta.ShowLineNumbers = false
 	ta.CharLimit = -1
 	ta.SetWidth(layout.Current.Container.Width - 6)
+
+	// Limit height to 8 lines to prevent excessive growth
+	ta.MaxHeight = 8
 
 	if existing != nil {
 		ta.SetValue(existing.Value())

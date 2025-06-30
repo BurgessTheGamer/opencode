@@ -312,6 +312,10 @@ type Model struct {
 	// vertically such that we can maintain the same navigating position.
 	lastCharOffset int
 
+	// scrollOffset is the number of display lines scrolled from the top
+	// when content exceeds MaxHeight. Used for viewport-like behavior.
+	scrollOffset int
+
 	// rune sanitizer for input.
 	rsan Sanitizer
 }
@@ -1037,13 +1041,18 @@ func (m Model) ContentHeight() int {
 
 // SetHeight sets the height of the textarea.
 func (m *Model) SetHeight(h int) {
-	// Calculate the actual content height
-	contentHeight := m.ContentHeight()
-
-	// Use the content height as the actual height
+	// If MaxHeight is set, grow up to MaxHeight based on content, then use viewport
 	if m.MaxHeight > 0 {
-		m.height = clamp(contentHeight, minHeight, m.MaxHeight)
+		contentHeight := m.ContentHeight()
+		// Grow naturally up to MaxHeight, then stay fixed for viewport scrolling
+		if contentHeight <= m.MaxHeight {
+			m.height = max(contentHeight, minHeight)
+		} else {
+			m.height = m.MaxHeight
+		}
 	} else {
+		// Calculate the actual content height for auto-expanding behavior
+		contentHeight := m.ContentHeight()
 		m.height = max(contentHeight, minHeight)
 	}
 }
@@ -1173,6 +1182,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	}
 	cmds = append(cmds, cmd)
 
+	// Ensure cursor stays visible when content exceeds height limit
+	m.ensureCursorVisible()
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -1194,6 +1206,8 @@ func (m Model) View() string {
 	)
 
 	displayLine := 0
+	renderedLines := 0
+
 	for l, line := range m.value {
 		wrappedLines := m.memoizedWrap(line, m.width)
 
@@ -1204,10 +1218,22 @@ func (m Model) View() string {
 		}
 
 		for wl, wrappedLine := range wrappedLines {
+			// Skip lines that are above the viewport (scrolled out of view)
+			if displayLine < m.scrollOffset {
+				displayLine++
+				continue
+			}
+
+			// Stop rendering if we've reached the height limit
+			if m.MaxHeight > 0 && renderedLines >= m.MaxHeight {
+				break
+			}
+
 			prompt := m.promptView(displayLine)
 			prompt = styles.computedPrompt().Render(prompt)
 			s.WriteString(style.Render(prompt))
 			displayLine++
+			renderedLines++
 
 			var ln string
 			if m.ShowLineNumbers {
@@ -1255,6 +1281,11 @@ func (m Model) View() string {
 			s.WriteString(style.Render(strings.Repeat(" ", max(0, padding))))
 			s.WriteRune('\n')
 			newLines++
+		}
+
+		// Break out of outer loop if we've reached height limit
+		if m.MaxHeight > 0 && renderedLines >= m.MaxHeight {
+			break
 		}
 	}
 
@@ -1464,6 +1495,30 @@ func (m Model) cursorLineNumber() int {
 	}
 	line += m.LineInfo().RowOffset
 	return line
+}
+
+// ensureCursorVisible adjusts scrollOffset to keep the cursor visible within the viewport
+func (m *Model) ensureCursorVisible() {
+	if m.MaxHeight <= 0 {
+		return // No height limit, no scrolling needed
+	}
+
+	cursorLine := m.cursorLineNumber()
+
+	// If cursor is above the viewport, scroll up
+	if cursorLine < m.scrollOffset {
+		m.scrollOffset = cursorLine
+	}
+
+	// If cursor is below the viewport, scroll down
+	if cursorLine >= m.scrollOffset+m.MaxHeight {
+		m.scrollOffset = cursorLine - m.MaxHeight + 1
+	}
+
+	// Ensure scroll offset doesn't go negative
+	if m.scrollOffset < 0 {
+		m.scrollOffset = 0
+	}
 }
 
 // mergeLineBelow merges the current line the cursor is on with the line below.
