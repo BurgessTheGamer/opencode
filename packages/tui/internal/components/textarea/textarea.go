@@ -1088,6 +1088,36 @@ func (m *Model) SetScrollbarActive(active bool) {
 	m.scrollbarActive = active
 }
 
+// MoveCursorToVisibleLine moves the cursor to a line that's currently visible in the viewport
+// This is useful after scrolling to prevent the view from snapping back to the cursor
+func (m *Model) MoveCursorToVisibleLine() {
+	if m.MaxHeight <= 0 {
+		return
+	}
+
+	// Find which line is at the top of the viewport
+	currentLine := 0
+	targetRow := 0
+
+	for row, line := range m.value {
+		wrappedLines := m.memoizedWrap(line, m.width)
+		for range wrappedLines {
+			if currentLine == m.scrollOffset {
+				// This is the first visible line
+				targetRow = row
+				goto found
+			}
+			currentLine++
+		}
+	}
+
+found:
+	// Move cursor to the beginning of the first visible line
+	m.row = targetRow
+	m.col = 0
+	m.lastCharOffset = 0
+}
+
 // Update is the Bubble Tea update loop.
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	if !m.focus {
