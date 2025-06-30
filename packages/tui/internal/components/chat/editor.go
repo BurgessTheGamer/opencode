@@ -116,6 +116,11 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Not on scrollbar, pass to textarea
 			evt.X -= 3 // prompt offset
 			evt.Y -= 1 // padding offset only (no top border)
+			slog.Debug("Passing click to textarea",
+				"originalX", evt.X+3,
+				"originalY", evt.Y+1,
+				"adjustedX", evt.X,
+				"adjustedY", evt.Y)
 			m.textarea, cmd = m.textarea.Update(evt)
 
 		case tea.MouseMotionMsg:
@@ -378,9 +383,9 @@ func (m *editorComponent) updateScrollbarState() {
 }
 
 func (m *editorComponent) isClickOnScrollbar(x, y int) bool {
-	// Check if click is within scrollbar hit zone (3 chars wide)
-	// Make the hit zone slightly more forgiving
-	if x < m.scrollbar.x-2 || x > m.scrollbar.x+1 {
+	// Check if click is within scrollbar hit zone
+	// Only accept clicks directly on the scrollbar (1 char wide)
+	if x != m.scrollbar.x {
 		return false
 	}
 
