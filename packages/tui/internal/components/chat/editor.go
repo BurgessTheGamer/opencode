@@ -135,6 +135,8 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.scrollbar.dragging {
 				slog.Debug("Stopped dragging scrollbar")
 				m.scrollbar.dragging = false
+				// Re-enable cursor when dragging stops
+				m.textarea.SetScrollbarActive(false)
 				return m, nil
 			}
 
@@ -411,6 +413,9 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 		m.scrollbar.dragStartScroll = m.textarea.ScrollOffset()
 		m.scrollbar.dragOffsetInThumb = clickY - m.scrollbar.thumbY
 
+		// Hide cursor while dragging
+		m.textarea.SetScrollbarActive(true)
+
 		slog.Debug("Started dragging scrollbar",
 			"dragStartY", y,
 			"dragStartThumb", m.scrollbar.thumbY,
@@ -427,6 +432,9 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 		return // Nothing to scroll
 	}
 
+	// Hide cursor temporarily while scrolling
+	m.textarea.SetScrollbarActive(true)
+
 	// Calculate scroll position based on click position
 	// Click at top = scroll to top, click at bottom = scroll to bottom
 	scrollPercent := float64(clickY) / float64(m.scrollbar.height-1)
@@ -442,6 +450,9 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 		"maxScroll", maxScroll)
 
 	m.textarea.SetScrollOffset(newScrollOffset)
+
+	// Re-enable cursor after jump
+	m.textarea.SetScrollbarActive(false)
 }
 
 func (m *editorComponent) handleScrollbarDrag(y int) {

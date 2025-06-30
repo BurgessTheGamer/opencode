@@ -1080,10 +1080,12 @@ func (m *Model) ScrollOffset() int {
 
 // SetScrollOffset sets the scroll offset
 func (m *Model) SetScrollOffset(offset int) {
-	maxOffset := max(0, m.LineCount()-m.height)
-	m.scrollOffset = max(0, min(offset, maxOffset))
-	// Mark that we're manually scrolling to prevent cursor from jumping view back
-	m.manualScrolling = true
+	m.scrollOffset = offset
+}
+
+// SetScrollbarActive sets whether the scrollbar is currently being interacted with
+func (m *Model) SetScrollbarActive(active bool) {
+	m.scrollbarActive = active
 }
 
 // Update is the Bubble Tea update loop.
@@ -1148,6 +1150,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		// Reset manual scrolling when user types or navigates
 		m.manualScrolling = false
+		m.scrollbarActive = false
 		switch {
 		case key.Matches(msg, m.KeyMap.DeleteAfterCursor):
 			m.col = clamp(m.col, 0, len(m.value[m.row]))
