@@ -324,6 +324,10 @@ type Model struct {
 	// to prevent cursor from forcing viewport changes
 	scrollbarActive bool
 
+	// scrollLocked prevents ensureCursorVisible from adjusting viewport after manual scrolling
+	// Reset on any cursor movement or text input
+	scrollLocked bool
+
 	// scrollbarDragging tracks if we're actively dragging the scrollbar
 	scrollbarDragging bool
 
@@ -1088,6 +1092,22 @@ func (m *Model) SetScrollbarActive(active bool) {
 	m.scrollbarActive = active
 }
 
+// SetScrollLocked sets whether the viewport is locked after manual scrolling
+// When locked, ensureCursorVisible won't adjust the viewport
+func (m *Model) SetScrollLocked(locked bool) {
+	m.scrollLocked = locked
+}
+
+// isCursorInViewport checks if the cursor is currently visible in the viewport
+func (m *Model) isCursorInViewport() bool {
+	if m.MaxHeight <= 0 {
+		return true // No viewport restriction
+	}
+
+	cursorLine := m.cursorLineNumber()
+	return cursorLine >= m.scrollOffset && cursorLine < m.scrollOffset+m.MaxHeight
+}
+
 // MoveCursorToVisibleLine moves the cursor to a line that's currently visible in the viewport
 // This is useful after scrolling to prevent the view from snapping back to the cursor
 func (m *Model) MoveCursorToVisibleLine() {
@@ -1095,26 +1115,58 @@ func (m *Model) MoveCursorToVisibleLine() {
 		return
 	}
 
-	// Find which line is at the top of the viewport
+	// Calculate middle of viewport
+	targetDisplayLine := m.scrollOffset + (m.MaxHeight / 2)
+
+	// Find which row corresponds to this display line
 	currentLine := 0
 	targetRow := 0
+	targetWrappedLine := 0
 
 	for row, line := range m.value {
 		wrappedLines := m.memoizedWrap(line, m.width)
-		for range wrappedLines {
-			if currentLine == m.scrollOffset {
-				// This is the first visible line
+		for wl := range wrappedLines {
+			if currentLine == targetDisplayLine {
+				// Found the target line
 				targetRow = row
+				targetWrappedLine = wl
 				goto found
 			}
 			currentLine++
+
+			// If we've gone past the last line, use the last line
+			if currentLine > targetDisplayLine {
+				targetRow = row
+				targetWrappedLine = wl
+				goto found
+			}
 		}
 	}
 
+	// If we didn't find it (shouldn't happen), use the last row
+	if len(m.value) > 0 {
+		targetRow = len(m.value) - 1
+	}
+
 found:
-	// Move cursor to the beginning of the first visible line
+	// Move cursor to the target row
 	m.row = targetRow
-	m.col = 0
+
+	// Try to maintain column position if possible
+	if m.col > len(m.value[m.row]) {
+		m.col = len(m.value[m.row])
+	}
+
+	// If we're on a wrapped line, adjust column to be on the visible wrapped portion
+	if targetWrappedLine > 0 && len(m.value[m.row]) > 0 {
+		wrappedLines := m.memoizedWrap(m.value[m.row], m.width)
+		if targetWrappedLine < len(wrappedLines) {
+			// Calculate approximate column position on the wrapped line
+			charsPerLine := m.width
+			m.col = min(targetWrappedLine*charsPerLine, len(m.value[m.row]))
+		}
+	}
+
 	m.lastCharOffset = 0
 }
 
@@ -1172,6 +1224,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 			// Mark as manual scrolling to prevent cursor from forcing view
 			m.manualScrolling = true
+			m.scrollLocked = true
 
 			// Return immediately without updating cursor
 			return m, nil
@@ -1181,6 +1234,14 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		// Reset manual scrolling when user types or navigates
 		m.manualScrolling = false
 		m.scrollbarActive = false
+
+		// If scroll is locked and cursor is not in viewport, move it to visible area
+		if m.scrollLocked {
+			if !m.isCursorInViewport() {
+				m.MoveCursorToVisibleLine()
+			}
+			m.scrollLocked = false
+		}
 		switch {
 		case key.Matches(msg, m.KeyMap.DeleteAfterCursor):
 			m.col = clamp(m.col, 0, len(m.value[m.row]))
@@ -1608,7 +1669,7 @@ func (m Model) cursorLineNumber() int {
 
 // ensureCursorVisible adjusts scrollOffset to keep the cursor visible within the viewport
 func (m *Model) ensureCursorVisible() {
-	if m.MaxHeight <= 0 || m.scrollbarActive {
+	if m.MaxHeight <= 0 || m.scrollbarActive || m.scrollLocked {
 		return
 	}
 

@@ -135,8 +135,8 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.scrollbar.dragging {
 				slog.Debug("Stopped dragging scrollbar")
 				m.scrollbar.dragging = false
-				// Move cursor to visible area before re-enabling
-				m.textarea.MoveCursorToVisibleLine()
+				// Lock scroll position to prevent snap-back
+				m.textarea.SetScrollLocked(true)
 				// Re-enable cursor when dragging stops
 				m.textarea.SetScrollbarActive(false)
 				return m, nil
@@ -453,8 +453,8 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 
 	m.textarea.SetScrollOffset(newScrollOffset)
 
-	// Move cursor to visible area after jump
-	m.textarea.MoveCursorToVisibleLine()
+	// Lock scroll position to prevent snap-back
+	m.textarea.SetScrollLocked(true)
 
 	// Re-enable cursor after jump
 	m.textarea.SetScrollbarActive(false)
