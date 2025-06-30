@@ -86,6 +86,20 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg, tea.MouseWheelMsg:
 		switch evt := msg.(type) {
 		case tea.MouseClickMsg:
+			// Always update scrollbar state before checking clicks
+			m.updateScrollbarState()
+
+			// Log all clicks near scrollbar for debugging
+			if m.scrollbar.visible && evt.X >= m.scrollbar.x-3 && evt.X <= m.scrollbar.x+2 {
+				slog.Debug("Click near scrollbar",
+					"x", evt.X,
+					"y", evt.Y,
+					"scrollbarX", m.scrollbar.x,
+					"scrollbarY", m.scrollbar.y,
+					"scrollbarHeight", m.scrollbar.height,
+					"isOnScrollbar", m.isClickOnScrollbar(evt.X, evt.Y))
+			}
+
 			// Check if click is on scrollbar
 			if m.scrollbar.visible && m.isClickOnScrollbar(evt.X, evt.Y) {
 				slog.Debug("Scrollbar click detected",
@@ -99,7 +113,6 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.handleScrollbarClick(evt.Y)
 				return m, nil
 			}
-
 			// Not on scrollbar, pass to textarea
 			evt.X -= 3 // prompt offset
 			evt.Y -= 1 // padding offset only (no top border)
@@ -362,27 +375,33 @@ func (m *editorComponent) updateScrollbarState() {
 
 func (m *editorComponent) isClickOnScrollbar(x, y int) bool {
 	// Check if click is within scrollbar hit zone (3 chars wide)
-	if x < m.scrollbar.x-2 || x > m.scrollbar.x {
+	// Make the hit zone slightly more forgiving
+	if x < m.scrollbar.x-2 || x > m.scrollbar.x+1 {
 		return false
 	}
 
 	// Check if click is within scrollbar height
-	if y < m.scrollbar.y || y >= m.scrollbar.y+m.scrollbar.height {
+	// Add 1 pixel tolerance at top and bottom
+	if y < m.scrollbar.y-1 || y > m.scrollbar.y+m.scrollbar.height {
 		return false
 	}
 
 	return true
 }
-
 func (m *editorComponent) handleScrollbarClick(y int) {
 	// Calculate click position relative to scrollbar
 	clickY := y - m.scrollbar.y
 
-	// Ensure click is within valid range
-	if clickY < 0 || clickY >= m.scrollbar.height {
+	// Ensure click is within valid range (with slight tolerance)
+	if clickY < -1 || clickY > m.scrollbar.height {
+		slog.Debug("Click outside scrollbar bounds",
+			"clickY", clickY,
+			"scrollbarHeight", m.scrollbar.height)
 		return
 	}
 
+	// Clamp clickY to valid range
+	clickY = max(0, min(m.scrollbar.height-1, clickY))
 	// Check if click is on thumb
 	if clickY >= m.scrollbar.thumbY && clickY < m.scrollbar.thumbY+m.scrollbar.thumbHeight {
 		// Start dragging - track where in the thumb we clicked
