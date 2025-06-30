@@ -20,7 +20,10 @@ type helpDialog struct {
 }
 
 func (h *helpDialog) Init() tea.Cmd {
-	return h.viewport.Init()
+	return tea.Batch(
+		h.commandsComponent.Init(),
+		h.viewport.Init(),
+	)
 }
 
 func (h *helpDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -34,6 +37,10 @@ func (h *helpDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		h.viewport = viewport.New(viewport.WithWidth(msg.Width-4), viewport.WithHeight(msg.Height-6))
 		h.commandsComponent.SetSize(msg.Width-4, msg.Height-6)
 	}
+
+	// Update commands component first to get the latest content
+	_, cmdCmd := h.commandsComponent.Update(msg)
+	cmds = append(cmds, cmdCmd)
 
 	// Update viewport content
 	h.viewport.SetContent(h.commandsComponent.View())

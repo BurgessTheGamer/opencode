@@ -21,7 +21,6 @@ import (
 )
 
 var RootPath string
-var CwdPath string
 
 type App struct {
 	Info      opencode.App
@@ -62,7 +61,6 @@ func New(
 	httpClient *opencode.Client,
 ) (*App, error) {
 	RootPath = appInfo.Path.Root
-	CwdPath = appInfo.Path.Cwd
 
 	configInfo, err := httpClient.Config.Get(ctx)
 	if err != nil {

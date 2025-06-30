@@ -100,18 +100,16 @@ func (m statusComponent) View() string {
 		contextWindow := m.app.Model.Limit.Context
 
 		for _, message := range m.app.Messages {
-			cost += message.Metadata.Assistant.Cost
-			usage := message.Metadata.Assistant.Tokens
-			if usage.Output > 0 {
-				if message.Metadata.Assistant.Summary {
-					tokens = usage.Output
-					continue
+			if message.Metadata.Assistant.Cost > 0 {
+				cost += message.Metadata.Assistant.Cost
+				usage := message.Metadata.Assistant.Tokens
+				if usage.Output > 0 {
+					tokens = (usage.Input +
+						usage.Cache.Write +
+						usage.Cache.Read +
+						usage.Output +
+						usage.Reasoning)
 				}
-				tokens = (usage.Input +
-					usage.Cache.Write +
-					usage.Cache.Read +
-					usage.Output +
-					usage.Reasoning)
 			}
 		}
 

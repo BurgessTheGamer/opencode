@@ -42,6 +42,6 @@ func Measure(tag string) func(...any) {
 	startTime := time.Now()
 	return func(tags ...any) {
 		args := append([]any{"timeTakenMs", time.Since(startTime).Milliseconds()}, tags...)
-		slog.Debug(tag, args...)
+		slog.Info(tag, args...)
 	}
 }

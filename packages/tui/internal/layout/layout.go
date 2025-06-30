@@ -1,7 +1,11 @@
 package layout
 
 import (
+	"reflect"
+
+	"github.com/charmbracelet/bubbles/v2/key"
 	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
 )
 
 var Current *LayoutInfo
@@ -29,4 +33,34 @@ type Modal interface {
 	tea.Model
 	Render(background string) string
 	Close() tea.Cmd
+}
+
+type Focusable interface {
+	Focus() tea.Cmd
+	Blur() tea.Cmd
+	IsFocused() bool
+}
+
+type Sizeable interface {
+	SetSize(width, height int) tea.Cmd
+	GetSize() (int, int)
+}
+
+type Alignable interface {
+	MaxWidth() int
+	Alignment() lipgloss.Position
+	SetPosition(x, y int)
+	GetPosition() (x, y int)
+}
+
+func KeyMapToSlice(t any) (bindings []key.Binding) {
+	typ := reflect.TypeOf(t)
+	if typ.Kind() != reflect.Struct {
+		return nil
+	}
+	for i := range typ.NumField() {
+		v := reflect.ValueOf(t).Field(i)
+		bindings = append(bindings, v.Interface().(key.Binding))
+	}
+	return
 }
