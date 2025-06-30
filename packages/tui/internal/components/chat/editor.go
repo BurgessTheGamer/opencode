@@ -97,7 +97,9 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					"scrollbarX", m.scrollbar.x,
 					"scrollbarY", m.scrollbar.y,
 					"scrollbarHeight", m.scrollbar.height,
-					"isOnScrollbar", m.isClickOnScrollbar(evt.X, evt.Y))
+					"scrollbarRange", fmt.Sprintf("y=%d to y=%d", m.scrollbar.y, m.scrollbar.y+m.scrollbar.height-1),
+					"isOnScrollbar", m.isClickOnScrollbar(evt.X, evt.Y),
+					"editorLines", m.Lines())
 			}
 
 			// Check if click is on scrollbar
@@ -415,18 +417,16 @@ func (m *editorComponent) isClickOnScrollbar(x, y int) bool {
 	}
 
 	// Check if click is within scrollbar height
-	// Add tolerance at top and bottom for easier clicking
-	if y < m.scrollbar.y-1 || y >= m.scrollbar.y+m.scrollbar.height+1 {
+	// Be precise - no tolerance to avoid confusion with textarea
+	if y < m.scrollbar.y || y >= m.scrollbar.y+m.scrollbar.height {
 		return false
 	}
 
 	return true
 }
-
 func (m *editorComponent) handleScrollbarClick(y int) {
 	// Calculate click position relative to scrollbar
 	clickY := y - m.scrollbar.y
-
 	// Ensure click is within valid range (with slight tolerance)
 	if clickY < -1 || clickY >= m.scrollbar.height+1 {
 		slog.Debug("Click outside scrollbar bounds",
@@ -515,7 +515,6 @@ func (m *editorComponent) handleScrollbarDrag(y int) {
 	// Calculate where the mouse is relative to the scrollbar
 	// Account for where we clicked in the thumb
 	scrollbarY := y - m.scrollbar.y - m.scrollbar.dragOffsetInThumb
-
 	// Calculate scrollbar dimensions
 	maxThumbPos := m.scrollbar.height - m.scrollbar.thumbHeight
 

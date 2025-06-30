@@ -281,6 +281,32 @@ Comprehensive theming with adaptive colors:
   - Updated `View()` method to render only visible lines within viewport
 - **Status**: Implemented and saved to personal repository
 
+### 🚧 Interactive Scrollbar for Text Input (In Progress)
+
+- **Branch**: `feat/text-selection-copy`
+- **Repository**: https://github.com/BurgessTheGamer/opencode
+- **Location**: `packages/tui/internal/components/chat/editor.go`
+- **Current Status**: ~95% complete - drag works perfectly, click-to-jump mostly works
+- **Features Implemented**:
+  - Visual scrollbar matching messages component style (thin track `│`, solid thumb `█`)
+  - Drag functionality works flawlessly
+  - Click-to-jump functionality works in most cases
+  - Proper coordinate tracking for textarea clicks
+  - Scrollbar appears/disappears based on content overflow
+  - Cursor hides during scrollbar interaction
+- **Known Issues**:
+  - Click detection occasionally confused between scrollbar and textarea
+  - Dynamic editor positioning (when growing from 1 to multiple lines) causes Y-coordinate misalignment
+  - Edge cases at bottom of scrollbar
+- **Technical Challenges**:
+  - Parent container adjusts editor Y position by `(Lines - 1)` when editor grows
+  - Mouse events arrive in screen coordinates but scrollbar position is in local coordinates
+  - Balancing precise click detection vs. user-friendly hit zones
+- **Next Steps**:
+  - Analyze component interaction logs to understand spacing issues
+  - Consider alternative approach to handle dynamic positioning
+  - May need to track editor's screen position for accurate coordinate translation
+
 ## Success Metrics
 
 ### 🎯 PRs Successfully Submitted
