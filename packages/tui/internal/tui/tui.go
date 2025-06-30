@@ -17,6 +17,7 @@ import (
 	"github.com/sst/opencode/internal/commands"
 	"github.com/sst/opencode/internal/completions"
 	"github.com/sst/opencode/internal/components/chat"
+	cmdcomp "github.com/sst/opencode/internal/components/commands"
 	"github.com/sst/opencode/internal/components/dialog"
 	"github.com/sst/opencode/internal/components/modal"
 	"github.com/sst/opencode/internal/components/status"
@@ -47,8 +48,6 @@ type appModel struct {
 	status               status.StatusComponent
 	editor               chat.EditorComponent
 	messages             chat.MessagesComponent
-	editorContainer      layout.Container
-	layout               layout.FlexLayout
 	completions          dialog.CompletionDialog
 	completionManager    *completions.CompletionManager
 	showCompletionDialog bool
@@ -377,6 +376,8 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return updated, cmd
 			}
 		}
+	case error:
+		return a, toast.NewErrorToast(msg.Error())
 	case app.SendMsg:
 		a.showCompletionDialog = false
 		cmd := a.app.SendChatMessage(context.Background(), msg.Text, msg.Attachments)
@@ -435,6 +436,9 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case opencode.EventListResponseEventSessionError:
 		switch err := msg.Properties.Error.AsUnion().(type) {
 		case nil:
+		case opencode.ProviderAuthError:
+			slog.Error("Failed to authenticate with provider", "error", err.Data.Message)
+			return a, toast.NewErrorToast("Provider error: " + err.Data.Message)
 		case opencode.UnknownError:
 			slog.Error("Server error", "name", err.Name, "message", err.Data.Message)
 			return a, toast.NewErrorToast(err.Data.Message, toast.WithTitle(string(err.Name)))
@@ -451,7 +455,10 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Width: min(a.width, 80),
 			},
 		}
-		a.layout.SetSize(a.width, a.height)
+		// Update child component sizes
+		messagesHeight := a.height - 6 // Leave room for editor and status bar
+		a.messages.SetSize(a.width, messagesHeight)
+		a.editor.SetSize(min(a.width, 80), 5)
 	case app.SessionSelectedMsg:
 		messages, err := a.app.ListMessages(context.Background(), msg.ID)
 		if err != nil {
@@ -515,47 +522,146 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (a appModel) View() string {
-	layoutView := a.layout.View()
-	editorWidth, _ := a.editorContainer.GetSize()
-	editorX, editorY := a.editorContainer.GetPosition()
+	editorView := a.editor.View()
+	lines := a.editor.Lines()
+	messagesView := a.messages.View()
+	if a.app.Session.ID == "" {
+		messagesView = a.home()
+	}
+	editorHeight := max(lines, 5)
 
-	if a.editor.Lines() > 1 {
-		editorY = editorY - a.editor.Lines() + 1
-		layoutView = layout.PlaceOverlay(
+	t := theme.CurrentTheme()
+	centeredEditorView := lipgloss.PlaceHorizontal(
+		a.width,
+		lipgloss.Center,
+		editorView,
+		styles.WhitespaceStyle(t.Background()),
+	)
+
+	mainLayout := layout.Render(
+		layout.FlexOptions{
+			Direction: layout.Column,
+			Width:     a.width,
+			Height:    a.height,
+		},
+		layout.FlexItem{
+			View: messagesView,
+			Grow: true,
+		},
+		layout.FlexItem{
+			View:      centeredEditorView,
+			FixedSize: 5,
+		},
+		// layout.FlexItem{
+		// 	View:      a.status.View(),
+		// 	FixedSize: 1,
+		// },
+	)
+
+	if lines > 1 {
+		editorWidth := min(a.width, 80)
+		editorX := (a.width - editorWidth) / 2
+		editorY := a.height - editorHeight
+		mainLayout = layout.PlaceOverlay(
 			editorX,
 			editorY,
 			a.editor.Content(),
-			layoutView,
+			mainLayout,
 		)
 	}
 
 	if a.showCompletionDialog {
+		editorWidth := min(a.width, 80)
+		editorX := (a.width - editorWidth) / 2
 		a.completions.SetWidth(editorWidth)
 		overlay := a.completions.View()
-		layoutView = layout.PlaceOverlay(
+		overlayHeight := lipgloss.Height(overlay)
+		editorY := a.height - editorHeight + 1
+
+		mainLayout = layout.PlaceOverlay(
 			editorX,
-			editorY-lipgloss.Height(overlay)+2,
+			editorY-overlayHeight,
 			overlay,
-			layoutView,
+			mainLayout,
 		)
 	}
 
-	components := []string{
-		layoutView,
-		a.status.View(),
-	}
-	appView := strings.Join(components, "\n")
-
 	if a.modal != nil {
-		appView = a.modal.Render(appView)
+		mainLayout = a.modal.Render(mainLayout)
 	}
-
-	appView = a.toastManager.RenderOverlay(appView)
-
+	mainLayout = a.toastManager.RenderOverlay(mainLayout)
 	if theme.CurrentThemeUsesAnsiColors() {
-		appView = util.ConvertRGBToAnsi16Colors(appView)
+		mainLayout = util.ConvertRGBToAnsi16Colors(mainLayout)
 	}
-	return appView
+	return mainLayout + "\n" + a.status.View()
+}
+
+func (a appModel) home() string {
+	t := theme.CurrentTheme()
+	baseStyle := styles.NewStyle().Background(t.Background())
+	base := baseStyle.Render
+	muted := styles.NewStyle().Foreground(t.TextMuted()).Background(t.Background()).Render
+
+	open := `
+█▀▀█ █▀▀█ █▀▀ █▀▀▄ 
+█░░█ █░░█ █▀▀ █░░█ 
+▀▀▀▀ █▀▀▀ ▀▀▀ ▀  ▀ `
+	code := `
+█▀▀ █▀▀█ █▀▀▄ █▀▀
+█░░ █░░█ █░░█ █▀▀
+▀▀▀ ▀▀▀▀ ▀▀▀  ▀▀▀`
+
+	logo := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		muted(open),
+		base(code),
+	)
+	// cwd := app.Info.Path.Cwd
+	// config := app.Info.Path.Config
+
+	versionStyle := styles.NewStyle().
+		Foreground(t.TextMuted()).
+		Background(t.Background()).
+		Width(lipgloss.Width(logo)).
+		Align(lipgloss.Right)
+	version := versionStyle.Render(a.app.Version)
+
+	logoAndVersion := strings.Join([]string{logo, version}, "\n")
+	logoAndVersion = lipgloss.PlaceHorizontal(
+		a.width,
+		lipgloss.Center,
+		logoAndVersion,
+		styles.WhitespaceStyle(t.Background()),
+	)
+	commandsView := cmdcomp.New(
+		a.app,
+		cmdcomp.WithBackground(t.Background()),
+		cmdcomp.WithLimit(6),
+	)
+	cmds := lipgloss.PlaceHorizontal(
+		a.width,
+		lipgloss.Center,
+		commandsView.View(),
+		styles.WhitespaceStyle(t.Background()),
+	)
+
+	lines := []string{}
+	lines = append(lines, logoAndVersion)
+	lines = append(lines, "")
+	lines = append(lines, "")
+	// lines = append(lines, base("cwd ")+muted(cwd))
+	// lines = append(lines, base("config ")+muted(config))
+	// lines = append(lines, "")
+	lines = append(lines, cmds)
+
+	return lipgloss.Place(
+		a.width,
+		a.height-5,
+		lipgloss.Center,
+		lipgloss.Center,
+		baseStyle.Render(strings.Join(lines, "\n")),
+		styles.WhitespaceStyle(t.Background()),
+	)
 }
 
 func (a appModel) executeCommand(command commands.Command) (tea.Model, tea.Cmd) {
@@ -629,11 +735,14 @@ func (a appModel) executeCommand(command commands.Command) (tea.Model, tea.Cmd) 
 		if a.app.Session.ID == "" {
 			return a, nil
 		}
-		_, err := a.app.Client.Session.Share(context.Background(), a.app.Session.ID)
+		response, err := a.app.Client.Session.Share(context.Background(), a.app.Session.ID)
 		if err != nil {
 			slog.Error("Failed to share session", "error", err)
 			return a, toast.NewErrorToast("Failed to share session")
 		}
+		shareUrl := response.Share.URL
+		cmds = append(cmds, tea.SetClipboard(shareUrl))
+		cmds = append(cmds, toast.NewSuccessToast("Share URL copied to clipboard!"))
 	case commands.SessionInterruptCommand:
 		if a.app.Session.ID == "" {
 			return a, nil
@@ -752,13 +861,6 @@ func NewModel(app *app.App) tea.Model {
 	editor := chat.NewEditorComponent(app)
 	completions := dialog.NewCompletionDialogComponent(initialProvider)
 
-	editorContainer := layout.NewContainer(
-		editor,
-		layout.WithMaxWidth(layout.Current.Container.Width),
-		layout.WithAlignCenter(),
-	)
-	messagesContainer := layout.NewContainer(messages)
-
 	var leaderBinding *key.Binding
 	if app.Config.Keybinds.Leader != "" {
 		binding := key.NewBinding(key.WithKeys(app.Config.Keybinds.Leader))
@@ -775,17 +877,8 @@ func NewModel(app *app.App) tea.Model {
 		leaderBinding:        leaderBinding,
 		isLeaderSequence:     false,
 		showCompletionDialog: false,
-		editorContainer:      editorContainer,
 		toastManager:         toast.NewToastManager(),
 		interruptKeyState:    InterruptKeyIdle,
-		layout: layout.NewFlexLayout(
-			[]tea.ViewModel{messagesContainer, editorContainer},
-			layout.WithDirection(layout.FlexDirectionVertical),
-			layout.WithSizes(
-				layout.FlexChildSizeGrow,
-				layout.FlexChildSizeFixed(5),
-			),
-		),
 	}
 
 	return model
