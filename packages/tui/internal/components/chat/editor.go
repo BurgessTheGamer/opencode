@@ -124,24 +124,6 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea, cmd = m.textarea.Update(evt)
 
 		case tea.MouseMotionMsg:
-			// Update scrollbar state for hover detection
-			m.updateScrollbarState()
-
-			// Check if hovering over scrollbar
-			wasHovering := m.scrollbar.hovering
-			m.scrollbar.hovering = m.scrollbar.visible && m.isHoveringScrollbar(evt.X, evt.Y)
-
-			// Debug hover detection
-			if m.scrollbar.visible {
-				slog.Debug("Mouse motion hover check",
-					"x", evt.X,
-					"y", evt.Y,
-					"scrollbarX", m.scrollbar.x,
-					"scrollbarY", m.scrollbar.y,
-					"hovering", m.scrollbar.hovering,
-					"wasHovering", wasHovering)
-			}
-
 			// Handle scrollbar dragging
 			if m.scrollbar.dragging {
 				slog.Debug("Mouse motion while dragging", "y", evt.Y)
@@ -149,15 +131,11 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			// If hover state changed, trigger a redraw
-			if wasHovering != m.scrollbar.hovering {
-				return m, nil
-			}
-
 			// Not dragging, pass to textarea
 			evt.X -= 3 // prompt offset
 			evt.Y -= 1 // padding offset only (no top border)
 			m.textarea, cmd = m.textarea.Update(evt)
+
 		case tea.MouseReleaseMsg:
 			// Stop dragging if active
 			if m.scrollbar.dragging {
@@ -421,19 +399,6 @@ func (m *editorComponent) isClickOnScrollbar(x, y int) bool {
 	return true
 }
 
-func (m *editorComponent) isHoveringScrollbar(x, y int) bool {
-	// More forgiving hit zone for hover (2 chars wide)
-	if x < m.scrollbar.x-1 || x > m.scrollbar.x {
-		return false
-	}
-
-	// Check if within scrollbar height with tolerance
-	if y < m.scrollbar.y-1 || y > m.scrollbar.y+m.scrollbar.height {
-		return false
-	}
-
-	return true
-}
 func (m *editorComponent) handleScrollbarClick(y int) {
 	// Calculate click position relative to scrollbar
 	clickY := y - m.scrollbar.y
@@ -467,7 +432,7 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 			"dragOffsetInThumb", m.scrollbar.dragOffsetInThumb)
 		return
 	}
-	// Click on track - jump to position
+	// Click on track - jump to position (center thumb on click)
 	totalLines := m.textarea.LineCount()
 	visibleLines := m.textarea.MaxHeight
 	maxScroll := max(0, totalLines-visibleLines)
@@ -479,17 +444,29 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 	// Hide cursor temporarily while scrolling
 	m.textarea.SetScrollbarActive(true)
 
-	// Calculate scroll position based on click position
-	// Click at top = scroll to top, click at bottom = scroll to bottom
-	scrollPercent := float64(clickY) / float64(m.scrollbar.height-1)
-	newScrollOffset := int(float64(maxScroll)*scrollPercent + 0.5)
+	// Center the thumb on the click position (like messages scrollbar)
+	newThumbPos := clickY - m.scrollbar.thumbHeight/2
+	maxThumbPos := m.scrollbar.height - m.scrollbar.thumbHeight
+
+	// Clamp thumb position
+	if newThumbPos < 0 {
+		newThumbPos = 0
+	} else if newThumbPos > maxThumbPos {
+		newThumbPos = maxThumbPos
+	}
+
+	// Calculate scroll offset from thumb position
+	newScrollOffset := 0
+	if maxThumbPos > 0 {
+		newScrollOffset = (newThumbPos * maxScroll) / maxThumbPos
+	}
 
 	// Clamp to valid range
 	newScrollOffset = max(0, min(maxScroll, newScrollOffset))
 
 	slog.Debug("Jumping to position",
 		"clickY", clickY,
-		"scrollPercent", scrollPercent,
+		"newThumbPos", newThumbPos,
 		"newScrollOffset", newScrollOffset,
 		"maxScroll", maxScroll)
 
@@ -503,45 +480,45 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 }
 
 func (m *editorComponent) handleScrollbarDrag(y int) {
-	// Calculate where the mouse is relative to the scrollbar
-	mouseInScrollbar := y - m.scrollbar.y
-
-	// Calculate where we want the thumb to be based on mouse position
-	// Account for where in the thumb we originally clicked
-	targetThumbY := mouseInScrollbar - m.scrollbar.dragOffsetInThumb
-
-	// Constrain thumb position to valid range
-	maxThumbY := m.scrollbar.height - m.scrollbar.thumbHeight
-	targetThumbY = max(0, min(maxThumbY, targetThumbY))
-
-	// Calculate scroll offset from thumb position
 	totalLines := m.textarea.LineCount()
 	visibleLines := m.textarea.MaxHeight
 	maxScroll := max(0, totalLines-visibleLines)
 
-	if maxScroll == 0 || maxThumbY == 0 {
+	if maxScroll == 0 {
 		return // Nothing to scroll
 	}
 
-	// Calculate scroll position with high precision
-	scrollRatio := float64(targetThumbY) / float64(maxThumbY)
-	newScrollOffset := int(float64(maxScroll)*scrollRatio + 0.5)
+	// Calculate where the mouse is relative to the scrollbar
+	// Account for where we clicked in the thumb
+	scrollbarY := y - m.scrollbar.y - m.scrollbar.dragOffsetInThumb
+
+	// Calculate scrollbar dimensions
+	maxThumbPos := m.scrollbar.height - m.scrollbar.thumbHeight
+
+	// Clamp thumb position
+	if scrollbarY < 0 {
+		scrollbarY = 0
+	} else if scrollbarY > maxThumbPos {
+		scrollbarY = maxThumbPos
+	}
+
+	// Calculate new scroll offset
+	newScrollOffset := 0
+	if maxThumbPos > 0 {
+		newScrollOffset = (scrollbarY * maxScroll) / maxThumbPos
+	}
 
 	// Ensure we can reach the extremes
-	if targetThumbY == 0 {
+	if scrollbarY == 0 {
 		newScrollOffset = 0
-	} else if targetThumbY == maxThumbY {
+	} else if scrollbarY == maxThumbPos {
 		newScrollOffset = maxScroll
 	}
 
-	// Clamp to valid range
-	newScrollOffset = max(0, min(maxScroll, newScrollOffset))
-
 	slog.Debug("Dragging scrollbar",
 		"y", y,
-		"mouseInScrollbar", mouseInScrollbar,
-		"targetThumbY", targetThumbY,
-		"scrollRatio", scrollRatio,
+		"scrollbarY", scrollbarY,
+		"maxThumbPos", maxThumbPos,
 		"newScrollOffset", newScrollOffset,
 		"maxScroll", maxScroll)
 
@@ -572,29 +549,23 @@ func (m *editorComponent) renderScrollbar() string {
 	scrollbar := make([]string, visibleLines)
 
 	// Create styles for track and thumb
-	var trackChar string
-	var trackStyle lipgloss.Style
-	var thumbStyle lipgloss.Style
+	trackStyle := lipgloss.NewStyle().
+		Foreground(t.BackgroundElement()).
+		Background(t.Background())
 
-	if m.scrollbar.hovering {
-		// Hover state - more visible
-		trackChar = "┃" // Thick line
-		trackStyle = lipgloss.NewStyle().
-			Foreground(t.Border()).
-			Background(t.Background())
-		thumbStyle = lipgloss.NewStyle().
-			Foreground(t.Primary()).
-			Background(t.BackgroundElement()). // Add background on hover
-			Bold(true)
-	} else {
-		// Normal state
-		trackChar = "│" // Thin line
-		trackStyle = lipgloss.NewStyle().
-			Foreground(t.BackgroundElement()).
-			Background(t.Background())
-		thumbStyle = lipgloss.NewStyle().
-			Foreground(t.Primary()).
-			Background(t.Background())
+	thumbStyle := lipgloss.NewStyle().
+		Foreground(t.Primary()).
+		Background(t.Background())
+
+	// Build scrollbar
+	for i := 0; i < visibleLines; i++ {
+		if i >= thumbPos && i < thumbPos+thumbHeight {
+			// Thumb part - use solid block
+			scrollbar[i] = thumbStyle.Render("█")
+		} else {
+			// Track part - use thin line
+			scrollbar[i] = trackStyle.Render("│")
+		}
 	}
 	// Build scrollbar
 	for i := 0; i < visibleLines; i++ {
@@ -602,8 +573,8 @@ func (m *editorComponent) renderScrollbar() string {
 			// Thumb part - use solid block
 			scrollbar[i] = thumbStyle.Render("█")
 		} else {
-			// Track part
-			scrollbar[i] = trackStyle.Render(trackChar)
+			// Track part - use thin line
+			scrollbar[i] = trackStyle.Render("│")
 		}
 	}
 	return strings.Join(scrollbar, "\n")
