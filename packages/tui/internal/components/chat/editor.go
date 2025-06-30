@@ -50,11 +50,12 @@ type ScrollbarState struct {
 	thumbHeight int // Thumb size
 
 	// Interaction state
-	hovering        bool
-	dragging        bool
-	dragStartY      int // Mouse Y when drag started
-	dragStartThumb  int // Thumb position when drag started
-	dragStartScroll int // Scroll offset when drag started
+	hovering          bool
+	dragging          bool
+	dragStartY        int // Mouse Y when drag started
+	dragStartThumb    int // Thumb position when drag started
+	dragStartScroll   int // Scroll offset when drag started
+	dragOffsetInThumb int // Where in the thumb we clicked (0 to thumbHeight-1)
 }
 
 type editorComponent struct {
@@ -336,16 +337,24 @@ func (m *editorComponent) updateScrollbarState() {
 	m.scrollbar.width = 3 // 3 chars wide for hit tolerance
 	m.scrollbar.height = m.textarea.MaxHeight
 
-	// Calculate thumb size and position
+	// Calculate thumb size and position with better precision
 	totalLines := m.textarea.LineCount()
 	visibleLines := m.textarea.MaxHeight
 	scrollOffset := m.textarea.ScrollOffset()
 
-	m.scrollbar.thumbHeight = max(1, (visibleLines*visibleLines)/totalLines)
-	maxThumbPos := visibleLines - m.scrollbar.thumbHeight
+	// Calculate thumb height as a proportion of visible content
+	// Use floating point for smoother calculation
+	thumbRatio := float64(visibleLines) / float64(totalLines)
+	m.scrollbar.thumbHeight = max(1, int(float64(m.scrollbar.height)*thumbRatio+0.5))
 
+	// Calculate thumb position
 	if totalLines > visibleLines {
-		m.scrollbar.thumbY = (scrollOffset * maxThumbPos) / (totalLines - visibleLines)
+		// Calculate position as a ratio of scroll progress
+		scrollRatio := float64(scrollOffset) / float64(totalLines-visibleLines)
+		maxThumbPos := m.scrollbar.height - m.scrollbar.thumbHeight
+		m.scrollbar.thumbY = int(float64(maxThumbPos)*scrollRatio + 0.5)
+		// Ensure thumb stays within bounds
+		m.scrollbar.thumbY = max(0, min(maxThumbPos, m.scrollbar.thumbY))
 	} else {
 		m.scrollbar.thumbY = 0
 	}
@@ -376,15 +385,18 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 
 	// Check if click is on thumb
 	if clickY >= m.scrollbar.thumbY && clickY < m.scrollbar.thumbY+m.scrollbar.thumbHeight {
-		// Start dragging
+		// Start dragging - track where in the thumb we clicked
 		m.scrollbar.dragging = true
 		m.scrollbar.dragStartY = y
 		m.scrollbar.dragStartThumb = m.scrollbar.thumbY
 		m.scrollbar.dragStartScroll = m.textarea.ScrollOffset()
+		m.scrollbar.dragOffsetInThumb = clickY - m.scrollbar.thumbY
+
 		slog.Debug("Started dragging scrollbar",
 			"dragStartY", y,
 			"dragStartThumb", m.scrollbar.thumbY,
-			"dragStartScroll", m.scrollbar.dragStartScroll)
+			"dragStartScroll", m.scrollbar.dragStartScroll,
+			"dragOffsetInThumb", m.scrollbar.dragOffsetInThumb)
 		return
 	}
 	// Click on track - jump to position
@@ -414,37 +426,45 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 }
 
 func (m *editorComponent) handleScrollbarDrag(y int) {
-	// Calculate drag delta from start position
-	dragDelta := y - m.scrollbar.dragStartY
+	// Calculate where the mouse is relative to the scrollbar
+	mouseInScrollbar := y - m.scrollbar.y
 
-	// Calculate total scrollable range
+	// Calculate where we want the thumb to be based on mouse position
+	// Account for where in the thumb we originally clicked
+	targetThumbY := mouseInScrollbar - m.scrollbar.dragOffsetInThumb
+
+	// Constrain thumb position to valid range
+	maxThumbY := m.scrollbar.height - m.scrollbar.thumbHeight
+	targetThumbY = max(0, min(maxThumbY, targetThumbY))
+
+	// Calculate scroll offset from thumb position
 	totalLines := m.textarea.LineCount()
 	visibleLines := m.textarea.MaxHeight
 	maxScroll := max(0, totalLines-visibleLines)
 
-	if maxScroll == 0 {
+	if maxScroll == 0 || maxThumbY == 0 {
 		return // Nothing to scroll
 	}
 
-	// Calculate pixels per scroll line
-	// Use floating point for smoother scrolling
-	scrollbarRange := float64(m.scrollbar.height - m.scrollbar.thumbHeight)
-	if scrollbarRange <= 0 {
-		return
-	}
+	// Calculate scroll position with high precision
+	scrollRatio := float64(targetThumbY) / float64(maxThumbY)
+	newScrollOffset := int(float64(maxScroll)*scrollRatio + 0.5)
 
-	// Calculate new scroll offset based on drag distance
-	scrollPerPixel := float64(maxScroll) / scrollbarRange
-	scrollDelta := float64(dragDelta) * scrollPerPixel
-	newScrollOffset := m.scrollbar.dragStartScroll + int(scrollDelta+0.5) // Round to nearest
+	// Ensure we can reach the extremes
+	if targetThumbY == 0 {
+		newScrollOffset = 0
+	} else if targetThumbY == maxThumbY {
+		newScrollOffset = maxScroll
+	}
 
 	// Clamp to valid range
 	newScrollOffset = max(0, min(maxScroll, newScrollOffset))
 
 	slog.Debug("Dragging scrollbar",
 		"y", y,
-		"dragDelta", dragDelta,
-		"scrollPerPixel", scrollPerPixel,
+		"mouseInScrollbar", mouseInScrollbar,
+		"targetThumbY", targetThumbY,
+		"scrollRatio", scrollRatio,
 		"newScrollOffset", newScrollOffset,
 		"maxScroll", maxScroll)
 
