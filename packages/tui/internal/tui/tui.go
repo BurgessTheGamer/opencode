@@ -299,7 +299,7 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Route to editor if within bounds (or if it's a release event, always route to active component)
 		inBounds := mouseX >= editorX && mouseX < editorX+editorWidth &&
-			mouseY >= editorY && mouseY < editorY+editorHeight
+			mouseY >= editorY && mouseY <= editorY+editorHeight
 
 		// Always route mouse release to both components to ensure state cleanup
 		if _, isRelease := msg.(tea.MouseReleaseMsg); isRelease {
