@@ -18,6 +18,8 @@ import (
 	rw "github.com/mattn/go-runewidth"
 	"github.com/rivo/uniseg"
 	"slices"
+
+	"github.com/sst/opencode/internal/layout"
 )
 
 const (
@@ -315,6 +317,11 @@ type Model struct {
 	// scrollOffset is the number of display lines scrolled from the top
 	// when content exceeds MaxHeight. Used for viewport-like behavior.
 	scrollOffset int
+
+	// Mouse interaction state for scrollbar
+	isDragging      bool
+	dragStartY      int
+	dragStartOffset int
 
 	// rune sanitizer for input.
 	rsan Sanitizer
@@ -1166,6 +1173,19 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			m.insertRunesFromUserInput([]rune(msg.Text))
 		}
 
+	case tea.MouseClickMsg:
+		if m.handleScrollbarClick(msg) {
+			// Scrollbar click handled
+		}
+
+	case tea.MouseMotionMsg:
+		if m.isDragging {
+			m.handleScrollbarDrag(msg)
+		}
+
+	case tea.MouseReleaseMsg:
+		m.isDragging = false
+
 	case pasteMsg:
 		m.insertRunesFromUserInput([]rune(msg))
 
@@ -1295,7 +1315,10 @@ func (m Model) View() string {
 		result = result[:len(result)-1]
 	}
 
-	return styles.Base.Render(result)
+	baseResult := styles.Base.Render(result)
+
+	// Apply scrollbar overlay if needed
+	return m.applyScrollbarOverlay(baseResult)
 }
 
 // promptView renders a single line of the prompt.
@@ -1685,4 +1708,151 @@ func abs(n int) int {
 		return -n
 	}
 	return n
+}
+
+// renderScrollbar creates a visual scrollbar for the textarea when content exceeds MaxHeight
+func (m Model) renderScrollbar() string {
+	// Only show scrollbar when MaxHeight is set and content overflows
+	if m.MaxHeight <= 0 {
+		return ""
+	}
+
+	totalLines := m.ContentHeight()
+	visibleLines := m.MaxHeight
+
+	// Don't show scrollbar if content fits
+	if totalLines <= visibleLines {
+		return ""
+	}
+
+	// Calculate scrollbar dimensions
+	scrollbarHeight := visibleLines
+	thumbHeight := max(1, (visibleLines*scrollbarHeight)/totalLines)
+	maxThumbPos := scrollbarHeight - thumbHeight
+	thumbPos := (m.scrollOffset * maxThumbPos) / max(1, totalLines-visibleLines)
+
+	// Build scrollbar using proper styling
+	scrollbar := make([]string, scrollbarHeight)
+
+	// Create styles for track and thumb (simplified for now)
+	for i := 0; i < scrollbarHeight; i++ {
+		if i >= thumbPos && i < thumbPos+thumbHeight {
+			// Thumb part - use solid block
+			scrollbar[i] = "█"
+		} else {
+			// Track part - use thin line
+			scrollbar[i] = "│"
+		}
+	}
+
+	return strings.Join(scrollbar, "\n")
+}
+
+// applyScrollbarOverlay applies the scrollbar as an overlay on the textarea content
+func (m Model) applyScrollbarOverlay(textareaContent string) string {
+	scrollbar := m.renderScrollbar()
+	if scrollbar == "" {
+		return textareaContent
+	}
+
+	// Position scrollbar at the rightmost column
+	scrollbarX := m.width - 1
+	scrollbarY := 0
+
+	return layout.PlaceOverlay(
+		scrollbarX,
+		scrollbarY,
+		scrollbar,
+		textareaContent,
+	)
+}
+
+// shouldShowScrollbar returns true if the scrollbar should be displayed
+func (m Model) shouldShowScrollbar() bool {
+	if m.MaxHeight <= 0 || m.height <= 0 {
+		return false
+	}
+	totalLines := len(m.value)
+	return totalLines > m.height
+}
+
+// handleScrollbarClick handles mouse clicks on the scrollbar
+func (m *Model) handleScrollbarClick(msg tea.MouseClickMsg) bool {
+	if !m.shouldShowScrollbar() {
+		return false
+	}
+
+	// Check if click is on the scrollbar column (rightmost)
+	scrollbarX := m.width - 1
+	if msg.X != scrollbarX {
+		return false
+	}
+
+	// Check if click is within the textarea height
+	if msg.Y < 0 || msg.Y >= m.height {
+		return false
+	}
+
+	// Calculate the position in the scrollbar
+	totalLines := len(m.value)
+	visibleLines := m.height
+	scrollableLines := totalLines - visibleLines
+
+	if scrollableLines <= 0 {
+		return true // Click handled but no scrolling needed
+	}
+
+	// Calculate thumb position and size
+	thumbSize := max(1, (visibleLines*m.height)/totalLines)
+	trackSize := m.height - thumbSize
+	thumbPosition := (m.scrollOffset * trackSize) / scrollableLines
+
+	// Check if click is on the thumb (start drag) or track (jump)
+	clickY := msg.Y
+	thumbStart := thumbPosition
+	thumbEnd := thumbPosition + thumbSize
+
+	if clickY >= thumbStart && clickY <= thumbEnd {
+		// Start dragging
+		m.isDragging = true
+		m.dragStartY = clickY
+		m.dragStartOffset = m.scrollOffset
+	} else {
+		// Jump to position
+		targetPosition := float64(clickY) / float64(m.height)
+		newOffset := int(targetPosition * float64(scrollableLines))
+		m.scrollOffset = clamp(newOffset, 0, scrollableLines)
+		m.ensureCursorVisible()
+	}
+
+	return true
+}
+
+// handleScrollbarDrag handles mouse drag events on the scrollbar
+func (m *Model) handleScrollbarDrag(msg tea.MouseMotionMsg) {
+	if !m.isDragging || !m.shouldShowScrollbar() {
+		return
+	}
+
+	totalLines := len(m.value)
+	visibleLines := m.height
+	scrollableLines := totalLines - visibleLines
+
+	if scrollableLines <= 0 {
+		return
+	}
+
+	// Calculate movement
+	deltaY := msg.Y - m.dragStartY
+	trackSize := m.height - max(1, (visibleLines*m.height)/totalLines)
+
+	if trackSize <= 0 {
+		return
+	}
+
+	// Convert pixel movement to scroll offset
+	scrollDelta := (deltaY * scrollableLines) / trackSize
+	newOffset := m.dragStartOffset + scrollDelta
+	m.scrollOffset = clamp(newOffset, 0, scrollableLines)
+	m.ensureCursorVisible()
 }
