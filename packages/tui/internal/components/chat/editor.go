@@ -74,8 +74,8 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				"y", evt.Y,
 				"width", m.width,
 				"hasScrollbar", m.hasScrollbar(),
+				"scrollbarX", m.width-2,
 				"isScrollbarX", evt.X == m.width-2)
-
 			if m.hasScrollbar() && evt.X == m.width-2 {
 				// Handle scrollbar click
 				if m.handleScrollbarClick(evt.Y) {
@@ -208,13 +208,7 @@ func (m *editorComponent) Content() string {
 			startLine := 1            // After top padding
 			endLine := len(lines) - 1 // Before bottom padding
 
-			slog.Debug("Applying scrollbar overlay",
-				"totalLines", len(lines),
-				"scrollbarLines", len(scrollbarLines),
-				"startLine", startLine,
-				"endLine", endLine,
-				"contentLines", endLine-startLine)
-
+			// Debug logging removed - too frequent during rendering
 			for i := 0; i < len(scrollbarLines) && startLine+i < endLine; i++ {
 				lineIdx := startLine + i
 				// Apply scrollbar overlay at the right edge, just inside the border
@@ -421,12 +415,7 @@ func (m *editorComponent) renderScrollbar() string {
 		Foreground(t.Primary()).
 		Background(t.Background())
 
-	slog.Debug("Rendering scrollbar",
-		"totalLines", totalLines,
-		"visibleLines", visibleLines,
-		"scrollOffset", scrollOffset,
-		"thumbHeight", thumbHeight,
-		"thumbPos", thumbPos)
+	// Debug logging removed - too frequent during rendering
 
 	for i := 0; i < visibleLines; i++ {
 		if i >= thumbPos && i < thumbPos+thumbHeight {
