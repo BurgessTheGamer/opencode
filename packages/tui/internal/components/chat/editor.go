@@ -124,10 +124,22 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea, cmd = m.textarea.Update(evt)
 
 		case tea.MouseMotionMsg:
+			// Update scrollbar state for hover detection
+			m.updateScrollbarState()
+
+			// Check if hovering over scrollbar
+			wasHovering := m.scrollbar.hovering
+			m.scrollbar.hovering = m.scrollbar.visible && m.isClickOnScrollbar(evt.X, evt.Y)
+
 			// Handle scrollbar dragging
 			if m.scrollbar.dragging {
 				slog.Debug("Mouse motion while dragging", "y", evt.Y)
 				m.handleScrollbarDrag(evt.Y)
+				return m, nil
+			}
+
+			// If hover state changed, trigger a redraw
+			if wasHovering != m.scrollbar.hovering {
 				return m, nil
 			}
 
@@ -539,9 +551,19 @@ func (m *editorComponent) renderScrollbar() string {
 		Foreground(t.BackgroundElement()).
 		Background(t.Background())
 
+	// Hover state makes track more visible
+	if m.scrollbar.hovering {
+		trackStyle = trackStyle.Foreground(t.Border())
+	}
+
 	thumbStyle := styles.NewStyle().
 		Foreground(t.Primary()).
 		Background(t.Background())
+
+	// Make thumb brighter on hover
+	if m.scrollbar.hovering {
+		thumbStyle = thumbStyle.Bold(true)
+	}
 
 	// Debug logging removed - too frequent during rendering
 
@@ -550,8 +572,12 @@ func (m *editorComponent) renderScrollbar() string {
 			// Thumb part - use solid block
 			scrollbar[i] = thumbStyle.Render("█")
 		} else {
-			// Track part - use thin line
-			scrollbar[i] = trackStyle.Render("│")
+			// Track part - use different character on hover for better visibility
+			if m.scrollbar.hovering {
+				scrollbar[i] = trackStyle.Render("┃") // Thicker line on hover
+			} else {
+				scrollbar[i] = trackStyle.Render("│") // Thin line normally
+			}
 		}
 	}
 
