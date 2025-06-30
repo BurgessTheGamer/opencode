@@ -117,7 +117,8 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// The prompt is ">" with 1 char padding = 2 chars total
 			// Plus we have a left border = 3 chars total
 			evt.X -= 3 // prompt (">") + padding + left border
-			evt.Y -= 1 // top padding
+			// Don't adjust Y - the click position is already correct
+			// evt.Y -= 1 // Removed - was causing clicks to be one line off
 
 			// Ensure coordinates are not negative
 			if evt.X < 0 {
@@ -135,7 +136,7 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			slog.Debug("Passing click to textarea",
 				"originalX", evt.X+3,
-				"originalY", evt.Y+1,
+				"originalY", evt.Y,
 				"adjustedX", evt.X,
 				"adjustedY", evt.Y)
 			m.textarea, cmd = m.textarea.Update(evt)
@@ -150,7 +151,7 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Not dragging, pass to textarea
 			evt.X -= 3 // prompt (">") + padding + left border
-			evt.Y -= 1 // top padding
+			// Don't adjust Y - the position is already correct
 
 			// Ensure coordinates are not negative
 			if evt.X < 0 {
