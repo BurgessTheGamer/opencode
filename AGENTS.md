@@ -281,31 +281,37 @@ Comprehensive theming with adaptive colors:
   - Updated `View()` method to render only visible lines within viewport
 - **Status**: Implemented and saved to personal repository
 
-### 🚧 Interactive Scrollbar for Text Input (In Progress)
+### ✅ Interactive Scrollbar for Text Input (99% Complete)
 
 - **Branch**: `feat/text-selection-copy`
 - **Repository**: https://github.com/BurgessTheGamer/opencode
 - **Location**: `packages/tui/internal/components/chat/editor.go`
-- **Current Status**: ~95% complete - drag works perfectly, click-to-jump mostly works
+- **Current Status**: 99% complete - everything works except bottom 1-2 pixels
 - **Features Implemented**:
   - Visual scrollbar matching messages component style (thin track `│`, solid thumb `█`)
   - Drag functionality works flawlessly
-  - Click-to-jump functionality works in most cases
+  - Click-to-jump functionality works perfectly (except very bottom)
   - Proper coordinate tracking for textarea clicks
   - Scrollbar appears/disappears based on content overflow
   - Cursor hides during scrollbar interaction
-- **Known Issues**:
-  - Click detection occasionally confused between scrollbar and textarea
-  - Dynamic editor positioning (when growing from 1 to multiple lines) causes Y-coordinate misalignment
-  - Edge cases at bottom of scrollbar
-- **Technical Challenges**:
-  - Parent container adjusts editor Y position by `(Lines - 1)` when editor grows
-  - Mouse events arrive in screen coordinates but scrollbar position is in local coordinates
-  - Balancing precise click detection vs. user-friendly hit zones
-- **Next Steps**:
-  - Analyze component interaction logs to understand spacing issues
-  - Consider alternative approach to handle dynamic positioning
-  - May need to track editor's screen position for accurate coordinate translation
+  - Expanded hit zone to include border (x=78-79)
+- **Remaining Issue**:
+  - Bottom 1-2 lines of scrollbar are visible but not clickable
+  - Root cause: Parent component bounds check uses `<` instead of `<=`
+  - Editor height=10, but parent only routes clicks for y=16-25 (not y=26)
+  - Scrollbar visually extends to y=10 but only y=1-8 are clickable
+- **Technical Analysis**:
+  - Parent TUI component at `packages/tui/internal/tui/tui.go` has bounds check:
+    ```go
+    inBounds := mouseX >= editorX && mouseX < editorX+editorWidth &&
+                mouseY >= editorY && mouseY < editorY+editorHeight
+    ```
+  - With editorY=16, editorHeight=10, this excludes mouseY=26 (local y=10)
+  - Scrollbar renders 10 lines but only 8-9 are routable by parent
+- **Potential Fixes**:
+  1. Change parent bounds check to use `<=` for bottom edge
+  2. Reduce scrollbar visual height to match clickable area
+  3. Adjust editor's reported height to account for padding
 
 ## Success Metrics
 

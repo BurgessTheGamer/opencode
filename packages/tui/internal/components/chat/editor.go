@@ -91,15 +91,20 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Log all clicks near scrollbar for debugging
 			if m.scrollbar.visible && evt.X >= m.scrollbar.x-3 && evt.X <= m.scrollbar.x+2 {
+				// The actual clickable bottom is height-1 due to parent bounds check
+				actualBottom := m.scrollbar.y + m.scrollbar.height - 2
 				slog.Debug("Click near scrollbar",
 					"x", evt.X,
 					"y", evt.Y,
 					"scrollbarX", m.scrollbar.x,
 					"scrollbarY", m.scrollbar.y,
 					"scrollbarHeight", m.scrollbar.height,
-					"scrollbarRange", fmt.Sprintf("y=%d to y=%d", m.scrollbar.y, m.scrollbar.y+m.scrollbar.height-1),
+					"visualRange", fmt.Sprintf("y=%d to y=%d", m.scrollbar.y, m.scrollbar.y+m.scrollbar.height-1),
+					"clickableRange", fmt.Sprintf("y=%d to y=%d", m.scrollbar.y, actualBottom),
 					"isOnScrollbar", m.isClickOnScrollbar(evt.X, evt.Y),
-					"editorLines", m.Lines())
+					"atBottom", evt.Y == actualBottom,
+					"editorWidth", m.width,
+					"textareaWidth", m.textarea.Width())
 			}
 
 			// Check if click is on scrollbar
@@ -384,6 +389,7 @@ func (m *editorComponent) updateScrollbarState() {
 	m.scrollbar.x = m.width - 2
 	m.scrollbar.y = 1     // After top padding
 	m.scrollbar.width = 3 // 3 chars wide for hit tolerance
+	// Height matches the visible content area (excluding bottom padding)
 	m.scrollbar.height = m.textarea.MaxHeight
 
 	// Calculate thumb size and position with better precision
@@ -411,14 +417,15 @@ func (m *editorComponent) updateScrollbarState() {
 
 func (m *editorComponent) isClickOnScrollbar(x, y int) bool {
 	// Check if click is within scrollbar hit zone
-	// Accept clicks within 1 character to the left of scrollbar for easier targeting
-	if x < m.scrollbar.x-1 || x > m.scrollbar.x {
+	// Accept clicks from scrollbar position to the right edge (including border)
+	if x < m.scrollbar.x || x > m.scrollbar.x+1 {
 		return false
 	}
 
 	// Check if click is within scrollbar height
-	// Be precise - no tolerance to avoid confusion with textarea
-	if y < m.scrollbar.y || y >= m.scrollbar.y+m.scrollbar.height {
+	// The scrollbar goes from y=1 to y=10 (inclusive)
+	// So we need to accept y >= 1 && y <= 10
+	if y < m.scrollbar.y || y > m.scrollbar.y+m.scrollbar.height-1 {
 		return false
 	}
 
