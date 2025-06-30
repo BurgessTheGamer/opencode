@@ -117,7 +117,7 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// The prompt is ">" with 1 char padding = 2 chars total
 			// Plus we have a left border = 3 chars total
 			evt.X -= 3 // prompt (">") + padding + left border
-			evt.Y -= 1 // Adjust for top padding only (no top border)
+			// evt.Y -= 1 // No Y adjustment needed - coordinates are already correct
 
 			// Ensure coordinates are not negative
 			if evt.X < 0 {
@@ -128,8 +128,7 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if evt.Y < 0 {
 				slog.Debug("Click Y coordinate went negative",
-					"originalY", evt.Y+1,
-					"adjustedY", evt.Y)
+					"originalY", evt.Y, "adjustedY", evt.Y)
 				evt.Y = 0
 			}
 
@@ -150,7 +149,7 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Not dragging, pass to textarea
 			evt.X -= 3 // prompt (">") + padding + left border
-			evt.Y -= 1 // Adjust for top padding only (no top border)
+			// evt.Y -= 1 // No Y adjustment needed - coordinates are already correct
 
 			// Ensure coordinates are not negative
 			if evt.X < 0 {
