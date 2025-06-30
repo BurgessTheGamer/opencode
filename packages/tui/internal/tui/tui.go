@@ -293,6 +293,8 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			mouseX, mouseY = evt.X, evt.Y
 		case tea.MouseReleaseMsg:
 			mouseX, mouseY = evt.X, evt.Y
+		case tea.MouseWheelMsg:
+			mouseX, mouseY = evt.X, evt.Y
 		}
 
 		// Route to editor if within bounds (or if it's a release event, always route to active component)
@@ -326,6 +328,12 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case tea.MouseMotionMsg:
 				evt.X -= editorX
 				evt.Y -= editorY
+				updated, cmd := a.editor.Update(evt)
+				a.editor = updated.(chat.EditorComponent)
+				cmds = append(cmds, cmd)
+			case tea.MouseWheelMsg:
+				// For mouse wheel, just pass it through without coordinate translation
+				// The Y field contains the scroll direction, not position
 				updated, cmd := a.editor.Update(evt)
 				a.editor = updated.(chat.EditorComponent)
 				cmds = append(cmds, cmd)

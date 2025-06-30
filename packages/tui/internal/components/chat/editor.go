@@ -62,7 +62,7 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
-	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg:
+	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg, tea.MouseWheelMsg:
 		// For now, just pass through all mouse events to textarea
 		// TODO: Implement better scrollbar interaction
 		switch evt := msg.(type) {
@@ -75,6 +75,9 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			evt.Y -= 1 // padding offset only (no top border)
 			m.textarea, cmd = m.textarea.Update(evt)
 		case tea.MouseReleaseMsg:
+			m.textarea, cmd = m.textarea.Update(evt)
+		case tea.MouseWheelMsg:
+			// Just pass through - no coordinate adjustment needed
 			m.textarea, cmd = m.textarea.Update(evt)
 		}
 		return m, cmd
