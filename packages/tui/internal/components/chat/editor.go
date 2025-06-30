@@ -48,6 +48,11 @@ type editorComponent struct {
 	currentMessage         string
 	spinner                spinner.Model
 	interruptKeyInDebounce bool
+
+	// Mouse interaction state for scrollbar
+	isDragging      bool
+	dragStartY      int
+	dragStartOffset int
 }
 
 func (m *editorComponent) Init() tea.Cmd {
@@ -102,27 +107,40 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Handle mouse events with coordinate translation
 	switch mouseMsg := msg.(type) {
 	case tea.MouseClickMsg:
-		// Translate coordinates to textarea-relative position
-		// Account for: border (1), padding top (1), prompt (2 chars including space)
-		translatedMsg := tea.MouseClickMsg{
-			X:      mouseMsg.X - 3, // border(1) + prompt(2)
-			Y:      mouseMsg.Y - 2, // border(1) + padding(1)
-			Button: mouseMsg.Button,
+		// Check if click is on the scrollbar first (at editor level)
+		if m.handleEditorScrollbarClick(mouseMsg) {
+			// Scrollbar click handled at editor level
+		} else {
+			// Translate coordinates to textarea-relative position
+			// Account for: border (1), padding top (1), prompt (2 chars including space)
+			translatedMsg := tea.MouseClickMsg{
+				X:      mouseMsg.X - 3, // border(1) + prompt(2)
+				Y:      mouseMsg.Y - 2, // border(1) + padding(1)
+				Button: mouseMsg.Button,
+			}
+			m.textarea, cmd = m.textarea.Update(translatedMsg)
 		}
-		m.textarea, cmd = m.textarea.Update(translatedMsg)
 	case tea.MouseMotionMsg:
-		translatedMsg := tea.MouseMotionMsg{
-			X: mouseMsg.X - 3, // border(1) + prompt(2)
-			Y: mouseMsg.Y - 2, // border(1) + padding(1)
+		if m.isDragging {
+			m.handleEditorScrollbarDrag(mouseMsg)
+		} else {
+			translatedMsg := tea.MouseMotionMsg{
+				X: mouseMsg.X - 3, // border(1) + prompt(2)
+				Y: mouseMsg.Y - 2, // border(1) + padding(1)
+			}
+			m.textarea, cmd = m.textarea.Update(translatedMsg)
 		}
-		m.textarea, cmd = m.textarea.Update(translatedMsg)
 	case tea.MouseReleaseMsg:
-		translatedMsg := tea.MouseReleaseMsg{
-			X:      mouseMsg.X - 3, // border(1) + prompt(2)
-			Y:      mouseMsg.Y - 2, // border(1) + padding(1)
-			Button: mouseMsg.Button,
+		if m.isDragging {
+			m.isDragging = false
+		} else {
+			translatedMsg := tea.MouseReleaseMsg{
+				X:      mouseMsg.X - 3, // border(1) + prompt(2)
+				Y:      mouseMsg.Y - 2, // border(1) + padding(1)
+				Button: mouseMsg.Button,
+			}
+			m.textarea, cmd = m.textarea.Update(translatedMsg)
 		}
-		m.textarea, cmd = m.textarea.Update(translatedMsg)
 	default:
 		m.textarea, cmd = m.textarea.Update(msg)
 	}
@@ -456,4 +474,122 @@ func (m *editorComponent) renderEditorScrollbar() string {
 	}
 
 	return scrollbar.String()
+}
+
+// handleEditorScrollbarClick handles mouse clicks on the editor-level scrollbar
+func (m *editorComponent) handleEditorScrollbarClick(msg tea.MouseClickMsg) bool {
+	// Check if we should show scrollbar
+	if m.textarea.MaxHeight <= 0 {
+		return false
+	}
+
+	totalLines := m.textarea.LineCount()
+	visibleLines := m.textarea.MaxHeight
+
+	if totalLines <= visibleLines {
+		return false
+	}
+
+	// Check if click is on the scrollbar column (rightmost of container)
+	scrollbarX := m.width - 1
+	if msg.X != scrollbarX {
+		return false
+	}
+
+	// Check if click is within the scrollbar area (account for borders and padding)
+	scrollbarStartY := 2 // top border + padding
+	scrollbarEndY := scrollbarStartY + visibleLines - 1
+
+	if msg.Y < scrollbarStartY || msg.Y > scrollbarEndY {
+		return false
+	}
+
+	// Convert to scrollbar-relative coordinates
+	clickY := msg.Y - scrollbarStartY
+
+	scrollableLines := totalLines - visibleLines
+	scrollOffset := m.textarea.ScrollOffset()
+
+	// Calculate thumb position and size
+	thumbSize := max(1, (visibleLines*visibleLines)/totalLines)
+	trackSize := visibleLines - thumbSize
+
+	var thumbPosition int
+	if trackSize > 0 {
+		thumbPosition = (scrollOffset * trackSize) / scrollableLines
+	}
+
+	// Check if click is on the thumb (start drag) or track (jump)
+	thumbStart := thumbPosition
+	thumbEnd := thumbPosition + thumbSize
+
+	if clickY >= thumbStart && clickY <= thumbEnd {
+		// Start dragging
+		m.isDragging = true
+		m.dragStartY = msg.Y
+		m.dragStartOffset = scrollOffset
+	} else {
+		// Jump to position
+		targetPosition := float64(clickY) / float64(visibleLines)
+		newOffset := int(targetPosition * float64(scrollableLines))
+		m.setTextareaScrollOffset(m.clamp(newOffset, 0, scrollableLines))
+	}
+
+	return true
+}
+
+// handleEditorScrollbarDrag handles mouse drag events on the editor-level scrollbar
+func (m *editorComponent) handleEditorScrollbarDrag(msg tea.MouseMotionMsg) {
+	if !m.isDragging {
+		return
+	}
+
+	totalLines := m.textarea.LineCount()
+	visibleLines := m.textarea.MaxHeight
+	scrollableLines := totalLines - visibleLines
+
+	if scrollableLines <= 0 {
+		return
+	}
+
+	// Calculate movement
+	deltaY := msg.Y - m.dragStartY
+	trackSize := visibleLines - max(1, (visibleLines*visibleLines)/totalLines)
+
+	if trackSize <= 0 {
+		return
+	}
+
+	// Convert pixel movement to scroll offset
+	scrollDelta := (deltaY * scrollableLines) / trackSize
+	newOffset := m.dragStartOffset + scrollDelta
+	m.setTextareaScrollOffset(m.clamp(newOffset, 0, scrollableLines))
+}
+
+// setTextareaScrollOffset sets the scroll offset on the textarea
+func (m *editorComponent) setTextareaScrollOffset(offset int) {
+	// We need to access the textarea's internal scroll offset
+	// For now, we'll use a workaround by simulating scroll commands
+	currentOffset := m.textarea.ScrollOffset()
+	diff := offset - currentOffset
+
+	if diff > 0 {
+		// Scroll down
+		for i := 0; i < diff; i++ {
+			m.textarea.CursorDown()
+		}
+	} else if diff < 0 {
+		// Scroll up
+		for i := 0; i < -diff; i++ {
+			m.textarea.CursorUp()
+		}
+	}
+}
+
+// clamp constrains a value between low and high bounds
+func (m *editorComponent) clamp(v, low, high int) int {
+	if high < low {
+		low, high = high, low
+	}
+	return min(high, max(low, v))
 }
