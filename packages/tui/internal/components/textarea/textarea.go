@@ -1194,6 +1194,73 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	case tea.PasteMsg:
 		m.insertRunesFromUserInput([]rune(msg))
 
+	case tea.MouseClickMsg:
+		// Handle mouse clicks to position cursor
+		// Clear scroll lock since user is actively positioning cursor
+		m.scrollLocked = false
+		m.manualScrolling = false
+		m.scrollbarActive = false
+
+		// Calculate which line was clicked
+		clickY := msg.Y
+		clickX := msg.X
+
+		slog.Debug("Textarea received click",
+			"x", clickX,
+			"y", clickY,
+			"scrollOffset", m.scrollOffset,
+			"MaxHeight", m.MaxHeight)
+		// Account for line numbers if shown
+		if m.ShowLineNumbers {
+			// Adjust for line number width
+			digits := len(strconv.Itoa(m.MaxHeight))
+			lineNumberWidth := digits + 3 // spaces and padding
+			clickX -= lineNumberWidth
+			if clickX < 0 {
+				clickX = 0
+			}
+		}
+
+		// Find which display line was clicked (accounting for scroll offset)
+		targetDisplayLine := m.scrollOffset + clickY
+
+		// Find the actual row and column
+		currentLine := 0
+		for row, line := range m.value {
+			wrappedLines := m.memoizedWrap(line, m.width)
+			for wl := range wrappedLines {
+				if currentLine == targetDisplayLine {
+					// Found the line that was clicked
+					m.row = row
+
+					// Calculate column position within the wrapped line
+					if wl == 0 {
+						// First wrapped line - use click X directly
+						m.col = min(clickX, len(line))
+					} else {
+						// Subsequent wrapped line - need to calculate offset
+						charsBeforeWrap := 0
+						for i := 0; i < wl && i < len(wrappedLines)-1; i++ {
+							charsBeforeWrap += len(wrappedLines[i])
+						}
+						m.col = min(charsBeforeWrap+clickX, len(line))
+					}
+
+					m.lastCharOffset = 0
+					return m, nil
+				}
+				currentLine++
+			}
+		}
+
+		// If click was beyond content, position at end of last line
+		if len(m.value) > 0 {
+			m.row = len(m.value) - 1
+			m.col = len(m.value[m.row])
+		}
+
+		return m, nil
+
 	case tea.MouseWheelMsg:
 		// Handle mouse wheel scrolling when content exceeds MaxHeight
 		slog.Debug("Textarea received mouse wheel",
