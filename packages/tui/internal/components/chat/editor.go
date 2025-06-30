@@ -182,10 +182,28 @@ func (m *editorComponent) Content() string {
 			lines := strings.Split(textarea, "\n")
 			scrollbarLines := strings.Split(scrollbar, "\n")
 
-			// Skip the top border line and bottom border line
-			for i := 1; i < len(lines)-1 && i-1 < len(scrollbarLines); i++ {
+			// With ThickBorder and padding:
+			// Line 0: Top border (┏━━━┓)
+			// Line 1: Padding (empty line)
+			// Lines 2 to n-2: Content lines
+			// Line n-1: Padding (empty line)
+			// Line n: Bottom border (┗━━━┛)
+
+			// We want scrollbar from line 2 to line n-2 (content area)
+			startLine := 2            // After border and top padding
+			endLine := len(lines) - 2 // Before bottom padding and border
+
+			slog.Debug("Applying scrollbar overlay",
+				"totalLines", len(lines),
+				"scrollbarLines", len(scrollbarLines),
+				"startLine", startLine,
+				"endLine", endLine,
+				"contentLines", endLine-startLine)
+
+			for i := 0; i < len(scrollbarLines) && startLine+i < endLine; i++ {
+				lineIdx := startLine + i
 				// Apply scrollbar overlay at the right edge, just inside the border
-				lines[i] = layout.PlaceOverlay(m.width-2, 0, scrollbarLines[i-1], lines[i])
+				lines[lineIdx] = layout.PlaceOverlay(m.width-2, 0, scrollbarLines[i], lines[lineIdx])
 			}
 
 			textarea = strings.Join(lines, "\n")
@@ -272,13 +290,12 @@ func (m *editorComponent) hasScrollbar() bool {
 
 func (m *editorComponent) handleScrollbarClick(y int) bool {
 	// Calculate click position relative to textarea content
-	// Account for border (1) and padding (1) = 2
+	// Account for border (1) and padding (1) at top = 2
 	scrollbarY := y - 2
 
 	if scrollbarY < 0 || scrollbarY >= m.textarea.MaxHeight {
 		return false
 	}
-
 	// Calculate new scroll position based on click
 	totalLines := m.textarea.LineCount()
 	visibleLines := m.textarea.MaxHeight
@@ -357,6 +374,13 @@ func (m *editorComponent) renderScrollbar() string {
 	thumbStyle := styles.NewStyle().
 		Foreground(t.Primary()).
 		Background(t.Background())
+
+	slog.Debug("Rendering scrollbar",
+		"totalLines", totalLines,
+		"visibleLines", visibleLines,
+		"scrollOffset", scrollOffset,
+		"thumbHeight", thumbHeight,
+		"thumbPos", thumbPos)
 
 	for i := 0; i < visibleLines; i++ {
 		if i >= thumbPos && i < thumbPos+thumbHeight {
