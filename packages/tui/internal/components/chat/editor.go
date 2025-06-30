@@ -114,8 +114,25 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			// Not on scrollbar, pass to textarea
-			evt.X -= 3 // prompt offset
-			evt.Y -= 1 // padding offset only (no top border)
+			// The prompt is ">" with 1 char padding = 2 chars total
+			// Plus we have a left border = 3 chars total
+			evt.X -= 3 // prompt (">") + padding + left border
+			evt.Y -= 1 // top padding
+
+			// Ensure coordinates are not negative
+			if evt.X < 0 {
+				slog.Debug("Click X coordinate went negative",
+					"originalX", evt.X+3,
+					"adjustedX", evt.X)
+				evt.X = 0
+			}
+			if evt.Y < 0 {
+				slog.Debug("Click Y coordinate went negative",
+					"originalY", evt.Y+1,
+					"adjustedY", evt.Y)
+				evt.Y = 0
+			}
+
 			slog.Debug("Passing click to textarea",
 				"originalX", evt.X+3,
 				"originalY", evt.Y+1,
@@ -132,8 +149,17 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 			// Not dragging, pass to textarea
-			evt.X -= 3 // prompt offset
-			evt.Y -= 1 // padding offset only (no top border)
+			evt.X -= 3 // prompt (">") + padding + left border
+			evt.Y -= 1 // top padding
+
+			// Ensure coordinates are not negative
+			if evt.X < 0 {
+				evt.X = 0
+			}
+			if evt.Y < 0 {
+				evt.Y = 0
+			}
+
 			m.textarea, cmd = m.textarea.Update(evt)
 
 		case tea.MouseReleaseMsg:
