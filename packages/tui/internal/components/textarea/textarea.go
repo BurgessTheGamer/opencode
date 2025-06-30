@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"image/color"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -1111,18 +1112,31 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	case tea.MouseWheelMsg:
 		// Handle mouse wheel scrolling when content exceeds MaxHeight
+		slog.Debug("Textarea received mouse wheel",
+			"msg", fmt.Sprintf("%+v", msg),
+			"MaxHeight", m.MaxHeight,
+			"LineCount", m.LineCount(),
+			"scrollOffset", m.scrollOffset)
+
 		if m.MaxHeight > 0 && m.LineCount() > m.MaxHeight {
 			scrollAmount := 3 // Scroll 3 lines per wheel tick
+			oldOffset := m.scrollOffset
 
-			// Check Y field for direction (negative = up, positive = down)
-			if msg.Y < 0 {
+			// In Bubble Tea v2, check the Button field for wheel direction
+			// MouseWheelUp and MouseWheelDown are the button values
+			if msg.Button == tea.MouseWheelUp {
 				// Scroll up
 				m.scrollOffset = max(0, m.scrollOffset-scrollAmount)
-			} else if msg.Y > 0 {
+			} else if msg.Button == tea.MouseWheelDown {
 				// Scroll down
 				maxScroll := max(0, m.LineCount()-m.MaxHeight)
 				m.scrollOffset = min(maxScroll, m.scrollOffset+scrollAmount)
 			}
+
+			slog.Debug("Textarea scroll update",
+				"oldOffset", oldOffset,
+				"newOffset", m.scrollOffset,
+				"button", msg.Button)
 
 			// Mark as manual scrolling to prevent cursor from forcing view
 			m.manualScrolling = true
