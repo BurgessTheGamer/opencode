@@ -415,8 +415,8 @@ func (m *editorComponent) isClickOnScrollbar(x, y int) bool {
 	}
 
 	// Check if click is within scrollbar height
-	// Add 1 pixel tolerance at top and bottom
-	if y < m.scrollbar.y-1 || y > m.scrollbar.y+m.scrollbar.height {
+	// Add tolerance at top and bottom for easier clicking
+	if y < m.scrollbar.y-1 || y >= m.scrollbar.y+m.scrollbar.height+1 {
 		return false
 	}
 
@@ -428,7 +428,7 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 	clickY := y - m.scrollbar.y
 
 	// Ensure click is within valid range (with slight tolerance)
-	if clickY < -1 || clickY > m.scrollbar.height {
+	if clickY < -1 || clickY >= m.scrollbar.height+1 {
 		slog.Debug("Click outside scrollbar bounds",
 			"clickY", clickY,
 			"scrollbarHeight", m.scrollbar.height)
