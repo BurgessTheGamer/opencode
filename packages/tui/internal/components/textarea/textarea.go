@@ -1317,8 +1317,8 @@ func (m Model) View() string {
 
 	baseResult := styles.Base.Render(result)
 
-	// Apply scrollbar overlay if needed
-	return m.applyScrollbarOverlay(baseResult)
+	// Scrollbar is now handled at the editor level
+	return baseResult
 }
 
 // promptView renders a single line of the prompt.
@@ -1774,6 +1774,11 @@ func (m Model) shouldShowScrollbar() bool {
 	}
 	totalLines := len(m.value)
 	return totalLines > m.height
+}
+
+// ScrollOffset returns the current scroll offset
+func (m Model) ScrollOffset() int {
+	return m.scrollOffset
 }
 
 // handleScrollbarClick handles mouse clicks on the scrollbar

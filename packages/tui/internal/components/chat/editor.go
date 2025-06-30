@@ -99,7 +99,33 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.spinner, cmd = m.spinner.Update(msg)
 	cmds = append(cmds, cmd)
 
-	m.textarea, cmd = m.textarea.Update(msg)
+	// Handle mouse events with coordinate translation
+	switch mouseMsg := msg.(type) {
+	case tea.MouseClickMsg:
+		// Translate coordinates to textarea-relative position
+		// Account for: border (1), padding top (1), prompt (2 chars including space)
+		translatedMsg := tea.MouseClickMsg{
+			X:      mouseMsg.X - 3, // border(1) + prompt(2)
+			Y:      mouseMsg.Y - 2, // border(1) + padding(1)
+			Button: mouseMsg.Button,
+		}
+		m.textarea, cmd = m.textarea.Update(translatedMsg)
+	case tea.MouseMotionMsg:
+		translatedMsg := tea.MouseMotionMsg{
+			X: mouseMsg.X - 3, // border(1) + prompt(2)
+			Y: mouseMsg.Y - 2, // border(1) + padding(1)
+		}
+		m.textarea, cmd = m.textarea.Update(translatedMsg)
+	case tea.MouseReleaseMsg:
+		translatedMsg := tea.MouseReleaseMsg{
+			X:      mouseMsg.X - 3, // border(1) + prompt(2)
+			Y:      mouseMsg.Y - 2, // border(1) + padding(1)
+			Button: mouseMsg.Button,
+		}
+		m.textarea, cmd = m.textarea.Update(translatedMsg)
+	default:
+		m.textarea, cmd = m.textarea.Update(msg)
+	}
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
@@ -130,6 +156,17 @@ func (m *editorComponent) Content() string {
 		BorderLeft(true).
 		BorderRight(true).
 		Render(textarea)
+
+	// Add scrollbar overlay on the right border if needed
+	if m.textarea.MaxHeight > 0 && len(m.textarea.Value()) > 0 {
+		scrollbar := m.renderEditorScrollbar()
+		if scrollbar != "" {
+			// Position scrollbar on the right border
+			scrollbarX := m.width - 1
+			scrollbarY := 1 // Account for top border
+			textarea = layout.PlaceOverlay(scrollbarX, scrollbarY, scrollbar, textarea)
+		}
+	}
 
 	hint := base(m.getSubmitKeyText()) + muted(" send   ")
 	if m.app.IsBusy() {
@@ -378,4 +415,45 @@ func NewEditorComponent(app *app.App) EditorComponent {
 		spinner:                s,
 		interruptKeyInDebounce: false,
 	}
+}
+
+// renderEditorScrollbar creates a scrollbar for the editor container
+func (m *editorComponent) renderEditorScrollbar() string {
+	if m.textarea.MaxHeight <= 0 {
+		return ""
+	}
+
+	totalLines := m.textarea.LineCount()
+	visibleLines := m.textarea.MaxHeight
+
+	if totalLines <= visibleLines {
+		return ""
+	}
+
+	scrollableLines := totalLines - visibleLines
+	scrollOffset := m.textarea.ScrollOffset()
+
+	// Calculate thumb position and size
+	thumbSize := max(1, (visibleLines*visibleLines)/totalLines)
+	trackSize := visibleLines - thumbSize
+
+	var thumbPosition int
+	if trackSize > 0 {
+		thumbPosition = (scrollOffset * trackSize) / scrollableLines
+	}
+
+	// Build scrollbar
+	var scrollbar strings.Builder
+	for i := 0; i < visibleLines; i++ {
+		if i >= thumbPosition && i < thumbPosition+thumbSize {
+			scrollbar.WriteString("█") // Thumb
+		} else {
+			scrollbar.WriteString("│") // Track
+		}
+		if i < visibleLines-1 {
+			scrollbar.WriteString("\n")
+		}
+	}
+
+	return scrollbar.String()
 }
