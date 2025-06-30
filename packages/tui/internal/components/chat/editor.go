@@ -129,7 +129,18 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Check if hovering over scrollbar
 			wasHovering := m.scrollbar.hovering
-			m.scrollbar.hovering = m.scrollbar.visible && m.isClickOnScrollbar(evt.X, evt.Y)
+			m.scrollbar.hovering = m.scrollbar.visible && m.isHoveringScrollbar(evt.X, evt.Y)
+
+			// Debug hover detection
+			if m.scrollbar.visible {
+				slog.Debug("Mouse motion hover check",
+					"x", evt.X,
+					"y", evt.Y,
+					"scrollbarX", m.scrollbar.x,
+					"scrollbarY", m.scrollbar.y,
+					"hovering", m.scrollbar.hovering,
+					"wasHovering", wasHovering)
+			}
 
 			// Handle scrollbar dragging
 			if m.scrollbar.dragging {
@@ -409,6 +420,20 @@ func (m *editorComponent) isClickOnScrollbar(x, y int) bool {
 
 	return true
 }
+
+func (m *editorComponent) isHoveringScrollbar(x, y int) bool {
+	// More forgiving hit zone for hover (2 chars wide)
+	if x < m.scrollbar.x-1 || x > m.scrollbar.x {
+		return false
+	}
+
+	// Check if within scrollbar height with tolerance
+	if y < m.scrollbar.y-1 || y > m.scrollbar.y+m.scrollbar.height {
+		return false
+	}
+
+	return true
+}
 func (m *editorComponent) handleScrollbarClick(y int) {
 	// Calculate click position relative to scrollbar
 	clickY := y - m.scrollbar.y
@@ -547,40 +572,40 @@ func (m *editorComponent) renderScrollbar() string {
 	scrollbar := make([]string, visibleLines)
 
 	// Create styles for track and thumb
-	trackStyle := styles.NewStyle().
-		Foreground(t.BackgroundElement()).
-		Background(t.Background())
+	var trackChar string
+	var trackStyle lipgloss.Style
+	var thumbStyle lipgloss.Style
 
-	// Hover state makes track more visible
 	if m.scrollbar.hovering {
-		trackStyle = trackStyle.Foreground(t.Border())
+		// Hover state - more visible
+		trackChar = "┃" // Thick line
+		trackStyle = lipgloss.NewStyle().
+			Foreground(t.Border()).
+			Background(t.Background())
+		thumbStyle = lipgloss.NewStyle().
+			Foreground(t.Primary()).
+			Background(t.BackgroundElement()). // Add background on hover
+			Bold(true)
+	} else {
+		// Normal state
+		trackChar = "│" // Thin line
+		trackStyle = lipgloss.NewStyle().
+			Foreground(t.BackgroundElement()).
+			Background(t.Background())
+		thumbStyle = lipgloss.NewStyle().
+			Foreground(t.Primary()).
+			Background(t.Background())
 	}
-
-	thumbStyle := styles.NewStyle().
-		Foreground(t.Primary()).
-		Background(t.Background())
-
-	// Make thumb brighter on hover
-	if m.scrollbar.hovering {
-		thumbStyle = thumbStyle.Bold(true)
-	}
-
-	// Debug logging removed - too frequent during rendering
-
+	// Build scrollbar
 	for i := 0; i < visibleLines; i++ {
 		if i >= thumbPos && i < thumbPos+thumbHeight {
 			// Thumb part - use solid block
 			scrollbar[i] = thumbStyle.Render("█")
 		} else {
-			// Track part - use different character on hover for better visibility
-			if m.scrollbar.hovering {
-				scrollbar[i] = trackStyle.Render("┃") // Thicker line on hover
-			} else {
-				scrollbar[i] = trackStyle.Render("│") // Thin line normally
-			}
+			// Track part
+			scrollbar[i] = trackStyle.Render(trackChar)
 		}
 	}
-
 	return strings.Join(scrollbar, "\n")
 }
 
