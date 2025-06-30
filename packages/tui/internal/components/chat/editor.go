@@ -720,8 +720,8 @@ func createTextArea(existing *textarea.Model) textarea.Model {
 	ta.CharLimit = -1
 	ta.SetWidth(layout.Current.Container.Width - 6)
 
-	// Limit height to 8 lines to prevent excessive growth
-	ta.MaxHeight = 8
+	// Limit height to 10 lines to prevent excessive growth
+	ta.MaxHeight = 10
 
 	if existing != nil {
 		ta.SetValue(existing.Value())
