@@ -409,8 +409,8 @@ func (m *editorComponent) updateScrollbarState() {
 
 func (m *editorComponent) isClickOnScrollbar(x, y int) bool {
 	// Check if click is within scrollbar hit zone
-	// Only accept clicks directly on the scrollbar (1 char wide)
-	if x != m.scrollbar.x {
+	// Accept clicks within 1 character to the left of scrollbar for easier targeting
+	if x < m.scrollbar.x-1 || x > m.scrollbar.x {
 		return false
 	}
 
