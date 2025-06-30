@@ -1078,6 +1078,7 @@ func (m *Model) ScrollOffset() int {
 func (m *Model) SetScrollOffset(offset int) {
 	maxOffset := max(0, m.LineCount()-m.height)
 	m.scrollOffset = max(0, min(offset, maxOffset))
+	// Don't call ensureCursorVisible here to allow smooth scrollbar control
 }
 
 // Update is the Bubble Tea update loop.

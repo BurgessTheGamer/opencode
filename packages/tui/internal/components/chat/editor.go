@@ -159,20 +159,39 @@ func (m *editorComponent) Content() string {
 		textareaView,
 	)
 
-	// Always render with full borders
-	textarea := styles.NewStyle().
-		Background(t.BackgroundElement()).
-		Width(m.width).
-		PaddingTop(1).
-		PaddingBottom(1).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderForeground(t.Border()).
-		BorderBackground(t.Background()).
-		BorderLeft(true).
-		BorderRight(true).
-		BorderTop(true).
-		BorderBottom(true).
-		Render(content)
+	// Render with appropriate borders based on scrollbar presence
+	var textarea string
+	if m.hasScrollbar() {
+		// When scrollbar is present, remove top and bottom borders
+		textarea = styles.NewStyle().
+			Background(t.BackgroundElement()).
+			Width(m.width).
+			PaddingTop(1).
+			PaddingBottom(1).
+			BorderStyle(lipgloss.ThickBorder()).
+			BorderForeground(t.Border()).
+			BorderBackground(t.Background()).
+			BorderLeft(true).
+			BorderRight(true).
+			BorderTop(false).
+			BorderBottom(false).
+			Render(content)
+	} else {
+		// Normal rendering with all borders
+		textarea = styles.NewStyle().
+			Background(t.BackgroundElement()).
+			Width(m.width).
+			PaddingTop(1).
+			PaddingBottom(1).
+			BorderStyle(lipgloss.ThickBorder()).
+			BorderForeground(t.Border()).
+			BorderBackground(t.Background()).
+			BorderLeft(true).
+			BorderRight(true).
+			BorderTop(true).
+			BorderBottom(true).
+			Render(content)
+	}
 
 	// Apply scrollbar overlay if needed
 	if m.hasScrollbar() {
@@ -189,9 +208,13 @@ func (m *editorComponent) Content() string {
 			// Line n-1: Padding (empty line)
 			// Line n: Bottom border (┗━━━┛)
 
-			// We want scrollbar from line 2 to line n-2 (content area)
-			startLine := 2            // After border and top padding
-			endLine := len(lines) - 2 // Before bottom padding and border
+			// Without top/bottom borders:
+			// Line 0: Padding (empty line)
+			// Lines 1 to n-1: Content lines
+			// Line n: Padding (empty line)
+
+			startLine := 1            // After top padding
+			endLine := len(lines) - 1 // Before bottom padding
 
 			slog.Debug("Applying scrollbar overlay",
 				"totalLines", len(lines),
@@ -290,13 +313,12 @@ func (m *editorComponent) hasScrollbar() bool {
 
 func (m *editorComponent) handleScrollbarClick(y int) bool {
 	// Calculate click position relative to textarea content
-	// Account for border (1) and padding (1) at top = 2
-	scrollbarY := y - 2
+	// With scrollbar, no top border, just padding (1)
+	scrollbarY := y - 1
 
 	if scrollbarY < 0 || scrollbarY >= m.textarea.MaxHeight {
 		return false
-	}
-	// Calculate new scroll position based on click
+	} // Calculate new scroll position based on click
 	totalLines := m.textarea.LineCount()
 	visibleLines := m.textarea.MaxHeight
 
@@ -326,7 +348,8 @@ func (m *editorComponent) handleScrollbarClick(y int) bool {
 
 func (m *editorComponent) handleScrollbarDrag(y int) {
 	// Calculate drag position relative to textarea content
-	scrollbarY := y - 2 - m.scrollbarDragStart
+	// With scrollbar, no top border, just padding (1)
+	scrollbarY := y - 1 - m.scrollbarDragStart
 
 	totalLines := m.textarea.LineCount()
 	visibleLines := m.textarea.MaxHeight
