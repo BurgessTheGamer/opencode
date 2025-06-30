@@ -317,8 +317,11 @@ Comprehensive theming with adaptive colors:
 
 ### 🎯 PRs Successfully Submitted
 
-- **3 major features** implemented and submitted
-- **2 separate PRs** properly organized by feature scope
+- **4 major features** implemented across 3 PRs
+- **PR #486** - Interactive Scrollbar (MERGED ✅)
+- **PR #518** - Text Selection & Copy (Submitted)
+- **PR #547** - Aiken LSP Support (Updated based on feedback ✅)
+- **Chat Box Expansion** - Ready for PR submission
 - **100% TypeScript compilation** success rate
 - **Zero breaking changes** to existing functionality
 
@@ -372,28 +375,36 @@ bun run build
 
 **IMPORTANT**: All changes must follow this workflow:
 
-1. **Always Save to Personal Repository First**:
+1. **Branch Strategy**:
+
+   - **`personal-main`**: Your main development branch with ALL features combined
+   - **Feature branches**: Individual branches for clean PRs to upstream
+   - Always test features on `personal-main` before creating PRs
+
+2. **Always Save to Personal Repository First**:
 
    ```bash
    # Save all changes to personal fork
    git add .
-   git commit -m "feat: description of changes"
+   git commit -m \"feat: description of changes\"
    git push personal <branch-name>
    ```
 
-2. **Ask Before Submitting PRs**:
+3. **Ask Before Submitting PRs**:
 
    - Never auto-submit PRs to upstream repositories
-   - Always ask user: "Would you like me to submit a PR for this feature?"
+   - Always ask user: \"Would you like me to submit a PR for this feature?\"
    - Wait for explicit confirmation before creating PRs
 
-3. **Separate PRs for Each Feature**:
+4. **Separate PRs for Each Feature**:
 
    - Each new feature gets its own branch and PR
    - Never combine multiple features in one PR
    - Use descriptive branch names: `feat/feature-name`
+   - Base feature branches on `origin/dev` for clean PRs
 
-4. **Personal Repository**: https://github.com/BurgessTheGamer/opencode
+5. **Personal Repository**: https://github.com/BurgessTheGamer/opencode
+   - **Main branch**: `main` (aliased from `personal-main`)
    - All development work is saved here first
    - Serves as backup and development history
    - Safe space for experimentation
