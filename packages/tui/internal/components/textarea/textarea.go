@@ -316,6 +316,9 @@ type Model struct {
 	// when content exceeds MaxHeight. Used for viewport-like behavior.
 	scrollOffset int
 
+	// manualScrolling indicates scrollbar is being used, prevents cursor from forcing view
+	manualScrolling bool
+
 	// scrollbarActive tracks if we're currently interacting with the scrollbar
 	// to prevent cursor from forcing viewport changes
 	scrollbarActive bool
@@ -1078,7 +1081,8 @@ func (m *Model) ScrollOffset() int {
 func (m *Model) SetScrollOffset(offset int) {
 	maxOffset := max(0, m.LineCount()-m.height)
 	m.scrollOffset = max(0, min(offset, maxOffset))
-	// Don't call ensureCursorVisible here to allow smooth scrollbar control
+	// Mark that we're manually scrolling to prevent cursor from jumping view back
+	m.manualScrolling = true
 }
 
 // Update is the Bubble Tea update loop.
@@ -1106,6 +1110,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		m.insertRunesFromUserInput([]rune(msg))
 
 	case tea.KeyPressMsg:
+		// Reset manual scrolling when user types or navigates
+		m.manualScrolling = false
 		switch {
 		case key.Matches(msg, m.KeyMap.DeleteAfterCursor):
 			m.col = clamp(m.col, 0, len(m.value[m.row]))
@@ -1208,7 +1214,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	cmds = append(cmds, cmd)
 
 	// Ensure cursor stays visible when content exceeds height limit
-	m.ensureCursorVisible()
+	// But not when manually scrolling with scrollbar
+	if !m.manualScrolling {
+		m.ensureCursorVisible()
+	}
 
 	return m, tea.Batch(cmds...)
 }
