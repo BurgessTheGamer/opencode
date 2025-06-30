@@ -50,10 +50,11 @@ type ScrollbarState struct {
 	thumbHeight int // Thumb size
 
 	// Interaction state
-	hovering       bool
-	dragging       bool
-	dragStartY     int // Mouse Y when drag started
-	dragStartThumb int // Thumb position when drag started
+	hovering        bool
+	dragging        bool
+	dragStartY      int // Mouse Y when drag started
+	dragStartThumb  int // Thumb position when drag started
+	dragStartScroll int // Scroll offset when drag started
 }
 
 type editorComponent struct {
@@ -106,6 +107,7 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.MouseMotionMsg:
 			// Handle scrollbar dragging
 			if m.scrollbar.dragging {
+				slog.Debug("Mouse motion while dragging", "y", evt.Y)
 				m.handleScrollbarDrag(evt.Y)
 				return m, nil
 			}
@@ -114,7 +116,6 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			evt.X -= 3 // prompt offset
 			evt.Y -= 1 // padding offset only (no top border)
 			m.textarea, cmd = m.textarea.Update(evt)
-
 		case tea.MouseReleaseMsg:
 			// Stop dragging if active
 			if m.scrollbar.dragging {
@@ -374,9 +375,11 @@ func (m *editorComponent) handleScrollbarClick(y int) {
 		m.scrollbar.dragging = true
 		m.scrollbar.dragStartY = y
 		m.scrollbar.dragStartThumb = m.scrollbar.thumbY
+		m.scrollbar.dragStartScroll = m.textarea.ScrollOffset()
 		slog.Debug("Started dragging scrollbar",
 			"dragStartY", y,
-			"dragStartThumb", m.scrollbar.thumbY)
+			"dragStartThumb", m.scrollbar.thumbY,
+			"dragStartScroll", m.scrollbar.dragStartScroll)
 		return
 	}
 
