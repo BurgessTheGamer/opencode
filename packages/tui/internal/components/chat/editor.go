@@ -69,6 +69,13 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch evt := msg.(type) {
 		case tea.MouseClickMsg:
 			// Check if click is on scrollbar (right edge, inside border)
+			slog.Debug("Editor mouse click",
+				"x", evt.X,
+				"y", evt.Y,
+				"width", m.width,
+				"hasScrollbar", m.hasScrollbar(),
+				"isScrollbarX", evt.X == m.width-2)
+
 			if m.hasScrollbar() && evt.X == m.width-2 {
 				// Handle scrollbar click
 				if m.handleScrollbarClick(evt.Y) {
@@ -93,7 +100,11 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textarea, cmd = m.textarea.Update(evt)
 		case tea.MouseReleaseMsg:
 			// Stop scrollbar dragging if active
-			m.scrollbarDragging = false
+			if m.scrollbarDragging {
+				slog.Debug("Stopped dragging scrollbar")
+				m.scrollbarDragging = false
+				return m, nil
+			}
 			// Pass through to textarea
 			m.textarea, cmd = m.textarea.Update(evt)
 		}
@@ -297,22 +308,40 @@ func (m *editorComponent) handleScrollbarClick(y int) bool {
 	// With scrollbar, no top border, just padding (1)
 	scrollbarY := y - 1
 
+	slog.Debug("Scrollbar click",
+		"y", y,
+		"scrollbarY", scrollbarY,
+		"maxHeight", m.textarea.MaxHeight)
+
 	if scrollbarY < 0 || scrollbarY >= m.textarea.MaxHeight {
+		slog.Debug("Click outside scrollbar range")
 		return false
-	} // Calculate new scroll position based on click
+	}
+
+	// Calculate new scroll position based on click
 	totalLines := m.textarea.LineCount()
 	visibleLines := m.textarea.MaxHeight
+	currentScrollOffset := m.textarea.ScrollOffset()
 
 	// Calculate thumb position and size
 	thumbHeight := max(1, (visibleLines*visibleLines)/totalLines)
 	maxThumbPos := visibleLines - thumbHeight
-	currentThumbPos := (m.textarea.ScrollOffset() * maxThumbPos) / max(1, totalLines-visibleLines)
+	currentThumbPos := (currentScrollOffset * maxThumbPos) / max(1, totalLines-visibleLines)
+
+	slog.Debug("Scrollbar state",
+		"totalLines", totalLines,
+		"visibleLines", visibleLines,
+		"currentScrollOffset", currentScrollOffset,
+		"thumbHeight", thumbHeight,
+		"currentThumbPos", currentThumbPos,
+		"clickedAt", scrollbarY)
 
 	// Check if click is on thumb
 	if scrollbarY >= currentThumbPos && scrollbarY < currentThumbPos+thumbHeight {
 		// Start dragging
 		m.scrollbarDragging = true
 		m.scrollbarDragStart = scrollbarY - currentThumbPos
+		slog.Debug("Started dragging scrollbar", "dragStart", m.scrollbarDragStart)
 		return true
 	}
 
@@ -322,6 +351,11 @@ func (m *editorComponent) handleScrollbarClick(y int) bool {
 
 	// Convert thumb position to scroll offset
 	newScrollOffset := (newThumbPos * (totalLines - visibleLines)) / max(1, maxThumbPos)
+
+	slog.Debug("Jumping to position",
+		"newThumbPos", newThumbPos,
+		"newScrollOffset", newScrollOffset)
+
 	m.textarea.SetScrollOffset(newScrollOffset)
 
 	return true
@@ -344,9 +378,17 @@ func (m *editorComponent) handleScrollbarDrag(y int) {
 
 	// Convert thumb position to scroll offset
 	newScrollOffset := (newThumbPos * (totalLines - visibleLines)) / max(1, maxThumbPos)
+
+	slog.Debug("Dragging scrollbar",
+		"y", y,
+		"scrollbarY", scrollbarY,
+		"newThumbPos", newThumbPos,
+		"newScrollOffset", newScrollOffset,
+		"totalLines", totalLines,
+		"visibleLines", visibleLines)
+
 	m.textarea.SetScrollOffset(newScrollOffset)
 }
-
 func (m *editorComponent) renderScrollbar() string {
 	if !m.hasScrollbar() {
 		return ""
