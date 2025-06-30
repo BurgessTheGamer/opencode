@@ -78,7 +78,7 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Not a scrollbar click, pass to textarea with coordinate adjustment
 			slog.Debug("Editor received mouse click", "x", evt.X, "y", evt.Y)
 			evt.X -= 3 // prompt offset
-			evt.Y -= 2 // border + padding offset
+			evt.Y -= 1 // padding offset only (no top border)
 			slog.Debug("Editor passing to textarea", "adjustedX", evt.X, "adjustedY", evt.Y)
 			m.textarea, cmd = m.textarea.Update(evt)
 		case tea.MouseMotionMsg:
@@ -89,7 +89,7 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			// Not dragging scrollbar, pass to textarea
 			evt.X -= 3 // prompt offset
-			evt.Y -= 2 // border + padding offset
+			evt.Y -= 1 // padding offset only (no top border)
 			m.textarea, cmd = m.textarea.Update(evt)
 		case tea.MouseReleaseMsg:
 			// Stop scrollbar dragging if active
@@ -159,39 +159,20 @@ func (m *editorComponent) Content() string {
 		textareaView,
 	)
 
-	// Render with appropriate borders based on scrollbar presence
-	var textarea string
-	if m.hasScrollbar() {
-		// When scrollbar is present, remove top and bottom borders
-		textarea = styles.NewStyle().
-			Background(t.BackgroundElement()).
-			Width(m.width).
-			PaddingTop(1).
-			PaddingBottom(1).
-			BorderStyle(lipgloss.ThickBorder()).
-			BorderForeground(t.Border()).
-			BorderBackground(t.Background()).
-			BorderLeft(true).
-			BorderRight(true).
-			BorderTop(false).
-			BorderBottom(false).
-			Render(content)
-	} else {
-		// Normal rendering with all borders
-		textarea = styles.NewStyle().
-			Background(t.BackgroundElement()).
-			Width(m.width).
-			PaddingTop(1).
-			PaddingBottom(1).
-			BorderStyle(lipgloss.ThickBorder()).
-			BorderForeground(t.Border()).
-			BorderBackground(t.Background()).
-			BorderLeft(true).
-			BorderRight(true).
-			BorderTop(true).
-			BorderBottom(true).
-			Render(content)
-	}
+	// Always render without top/bottom borders for clean look
+	textarea := styles.NewStyle().
+		Background(t.BackgroundElement()).
+		Width(m.width).
+		PaddingTop(1).
+		PaddingBottom(1).
+		BorderStyle(lipgloss.ThickBorder()).
+		BorderForeground(t.Border()).
+		BorderBackground(t.Background()).
+		BorderLeft(true).
+		BorderRight(true).
+		BorderTop(false).
+		BorderBottom(false).
+		Render(content)
 
 	// Apply scrollbar overlay if needed
 	if m.hasScrollbar() {
