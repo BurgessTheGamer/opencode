@@ -13,3 +13,13 @@
 2025/07/01 02:03:10 Request: method=scrape_pro, params=map[aiProvider:claude-3-5-sonnet-20241022 format:markdown includeScreenshot:false solveCaptchas:true url:https://example.com]
 2025/07/01 02:03:52 Request: method=automate_pro, params=map[actions:[map[selector:button type:click]] aiProvider:claude-3-5-sonnet-20241022 solveCaptchas:true url:https://example.com]
 2025/07/01 02:03:58 Request: method=scrape_pro, params=map[aiProvider:claude-3-5-sonnet-20241022 format:markdown includeScreenshot:false solveCaptchas:true url:https://example.com]
+2025/07/01 02:06:37 Request: method=search, params=map[maxResults:5 query:OpenAI GPT-4 latest news]
+2025/07/01 02:06:37 Search request: query=OpenAI GPT-4 latest news, maxResults=5
+2025/07/01 02:06:38 Search results: 5 found
+2025/07/01 02:06:44 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://example.com]
+2025/07/01 02:06:49 Request: method=screenshot, params=map[fullPage:true url:https://example.com]
+2025/07/01 02:06:49 Screenshot request: url=https://example.com
+2025/07/01 02:06:54 Request: method=automate, params=map[actions:[map[type:screenshot] map[selector:a timeout:2000 type:click]] url:https://example.com]
+2025/07/01 02:07:59 Request: method=extract, params=map[multiple:false selectors:map[link:a paragraph:p title:h1] url:https://example.com]
+2025/07/01 02:08:05 Request: method=scrape_pro, params=map[aiProvider:claude-3-5-sonnet captchaSolving:true format:markdown includeScreenshot:false solveCaptchas:true url:https://example.com]
+2025/07/01 02:08:10 Request: method=crawl, params=map[maxDepth:1 maxPages:3 respectRobots:true startUrl:https://example.com]
