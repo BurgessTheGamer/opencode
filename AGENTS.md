@@ -198,11 +198,19 @@ git push personal personal-main:main
 3. Integrate with OpenCode's tool system
 4. Test with real websites
 
+#### **Claude-Specific Optimization**
+
+- **Removed**: `openbrowser_search` for Claude users
+- **Why**: Claude already knows millions of URLs from training
+- **Result**: Faster, more direct access to content
+- **Example**: Instead of search → results → scrape, just scrape directly
+
 ## 🎯 Success Metrics
 
 - **6 major features** implemented (5 completed + OpenBrowser DONE!)
 - **3 PRs submitted**, 1 merged
 - **OpenBrowser**: 8 working tools, FREE web search, CAPTCHA solving
+- **Optimization**: Removed redundant search for Claude (Claude has built-in knowledge)
 - **Zero breaking changes**
 - **100% TypeScript compilation**
 - **Clean PR separation**

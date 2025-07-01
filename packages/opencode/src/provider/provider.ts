@@ -474,7 +474,10 @@ export namespace Provider {
   const PRO_TOOLS = [OpenBrowserAutomateProTool, OpenBrowserScrapeProTool]
 
   const TOOL_MAPPING: Record<string, Tool.Info[]> = {
-    anthropic: [...TOOLS.filter((t) => t.id !== "patch"), ...PRO_TOOLS],
+    anthropic: [
+      ...TOOLS.filter((t) => t.id !== "patch" && t.id !== "openbrowser_search"),
+      ...PRO_TOOLS,
+    ],
     openai: TOOLS.map((t) => ({
       ...t,
       parameters: optionalToNullable(t.parameters),
