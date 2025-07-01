@@ -39,18 +39,7 @@ type ScrapeParams struct {
 	Timeout           int    `json:"timeout,omitempty"`   // Timeout in milliseconds
 }
 
-// SearchParams defines parameters for web search
-type SearchParams struct {
-	Query      string `json:"query"`
-	MaxResults int    `json:"maxResults,omitempty"`
-}
-
-// SearchResult represents a search result
-type SearchResult struct {
-	Title   string `json:"title"`
-	URL     string `json:"url"`
-	Snippet string `json:"snippet"`
-}
+// Search removed - AIs already know URLs!
 
 // CrawlParams defines parameters for web crawling
 type CrawlParams struct {

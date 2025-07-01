@@ -83,8 +83,6 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		sendSuccess(w, map[string]interface{}{"message": "Browser server is working!"})
 	case "scrape":
 		handleScrape(w, req.Params)
-	case "search":
-		handleSearch(w, req.Params)
 	case "crawl":
 		handleCrawl(w, req.Params)
 	case "extract":
@@ -131,27 +129,7 @@ func handleScrape(w http.ResponseWriter, params map[string]interface{}) {
 	sendSuccess(w, data)
 }
 
-func handleSearch(w http.ResponseWriter, params map[string]interface{}) {
-	searchParams := browser.SearchParams{
-		Query:      getString(params, "query"),
-		MaxResults: getInt(params, "maxResults"),
-	}
-
-	log.Printf("Search request: query=%s, maxResults=%d", searchParams.Query, searchParams.MaxResults)
-
-	results, err := engine.SearchWeb(searchParams)
-	if err != nil {
-		log.Printf("Search error: %v", err)
-		sendError(w, err.Error())
-		return
-	}
-
-	log.Printf("Search results: %d found", len(results))
-
-	sendSuccess(w, map[string]interface{}{
-		"results": results,
-	})
-}
+// handleSearch removed - AIs don't need search, they know URLs!
 
 func handleCrawl(w http.ResponseWriter, params map[string]interface{}) {
 	crawlParams := browser.CrawlParams{

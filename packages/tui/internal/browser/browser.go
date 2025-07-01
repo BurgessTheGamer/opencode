@@ -16,7 +16,6 @@ import (
 type Browser interface {
 	// Core functionality
 	ScrapeWebpage(params ScrapeParams) (*Page, error)
-	SearchWeb(params SearchParams) ([]SearchResult, error)
 	CrawlWebpages(params CrawlParams) ([]*Page, error)
 	ExtractStructuredData(params ExtractParams) (interface{}, error)
 	BrowserAutomation(params AutomationParams) (*AutomationResult, error)
