@@ -166,13 +166,12 @@ git push personal personal-main:main
 #### **Implemented Tools (TESTED & WORKING!)**
 
 1. ✅ **`openbrowser_scrape`** - HTML/Markdown extraction (tested on example.com)
-2. ✅ **`openbrowser_search`** - DuckDuckGo search (FREE! tested with GPT-4 news)
-3. ✅ **`openbrowser_crawl`** - Multi-page crawling (crawled 2 pages from example.com)
-4. ✅ **`openbrowser_extract`** - CSS selector extraction (extracted title, paragraph, link)
-5. ✅ **`openbrowser_automate`** - Browser automation (screenshot worked, click tested)
-6. ✅ **`openbrowser_screenshot`** - Full page screenshots (1920x941 captured)
-7. ✅ **`openbrowser_scrape_pro`** - Pro scraping with CAPTCHA solving
-8. ✅ **`openbrowser_automate_pro`** - Pro automation with Claude Vision
+2. ✅ **`openbrowser_crawl`** - Multi-page crawling (crawled 2 pages from example.com)
+3. ✅ **`openbrowser_extract`** - CSS selector extraction (extracted title, paragraph, link)
+4. ✅ **`openbrowser_automate`** - Browser automation (screenshot worked, click tested)
+5. ✅ **`openbrowser_screenshot`** - Full page screenshots (1920x941 captured)
+6. ✅ **`openbrowser_scrape_pro`** - Pro scraping with CAPTCHA solving
+7. ✅ **`openbrowser_automate_pro`** - Pro automation with Claude Vision
 
 #### **Key Technologies**
 
@@ -198,10 +197,10 @@ git push personal personal-main:main
 3. Integrate with OpenCode's tool system
 4. Test with real websites
 
-#### **Claude-Specific Optimization**
+#### **AI Optimization**
 
-- **Removed**: `openbrowser_search` for Claude users
-- **Why**: Claude already knows millions of URLs from training
+- **Removed**: `openbrowser_search` for ALL AI users
+- **Why**: ALL modern AIs (Claude, GPT-4, Gemini) already know URLs
 - **Result**: Faster, more direct access to content
 - **Example**: Instead of search → results → scrape, just scrape directly
 
@@ -209,8 +208,8 @@ git push personal personal-main:main
 
 - **6 major features** implemented (5 completed + OpenBrowser DONE!)
 - **3 PRs submitted**, 1 merged
-- **OpenBrowser**: 8 working tools, FREE web search, CAPTCHA solving
-- **Optimization**: Removed redundant search for Claude (Claude has built-in knowledge)
+- **OpenBrowser**: 7 working tools (removed search - AIs know URLs!), CAPTCHA solving
+- **Optimization**: Removed redundant search for ALL AIs (they have built-in knowledge)
 - **Zero breaking changes**
 - **100% TypeScript compilation**
 - **Clean PR separation**

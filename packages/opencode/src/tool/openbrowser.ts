@@ -276,7 +276,7 @@ export const OpenBrowserScreenshotTool = Tool.define({
 // Export all OpenBrowser tools
 export const OpenBrowserTools = [
   OpenBrowserScrapeTool,
-  OpenBrowserSearchTool,
+  // OpenBrowserSearchTool, // Removed - AIs already know URLs!
   OpenBrowserCrawlTool,
   OpenBrowserExtractTool,
   OpenBrowserAutomateTool,
