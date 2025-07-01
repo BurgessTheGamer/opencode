@@ -15,16 +15,5 @@
         }
       ]
     }
-  },
-  "mcp": {
-    "openbrowser": {
-      "type": "local",
-      "command": ["bun", "run", "./packages/openbrowser/src/server.ts"],
-      "enabled": true,
-      "environment": {
-        "OPENCODE_AI_ACCESS": "true",
-        "OPENBROWSER_PROFILES_DIR": "~/.openbrowser/profiles"
-      }
-    }
   }
 }

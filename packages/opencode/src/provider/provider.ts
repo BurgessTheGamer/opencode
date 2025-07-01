@@ -16,6 +16,11 @@ import { ReadTool } from "../tool/read"
 import type { Tool } from "../tool/tool"
 import { WriteTool } from "../tool/write"
 import { TodoReadTool, TodoWriteTool } from "../tool/todo"
+import { OpenBrowserTools } from "../tool/openbrowser"
+import {
+  OpenBrowserAutomateProTool,
+  OpenBrowserScrapeProTool,
+} from "../tool/openbrowser-captcha"
 import { AuthAnthropic } from "../auth/anthropic"
 import { AuthCopilot } from "../auth/copilot"
 import { ModelsDev } from "./models"
@@ -462,10 +467,14 @@ export namespace Provider {
     TodoWriteTool,
     TodoReadTool,
     // TaskTool,
+    ...OpenBrowserTools,
   ]
 
+  // Pro/Max exclusive tools (only for Claude 3.5 Sonnet)
+  const PRO_TOOLS = [OpenBrowserAutomateProTool, OpenBrowserScrapeProTool]
+
   const TOOL_MAPPING: Record<string, Tool.Info[]> = {
-    anthropic: TOOLS.filter((t) => t.id !== "patch"),
+    anthropic: [...TOOLS.filter((t) => t.id !== "patch"), ...PRO_TOOLS],
     openai: TOOLS.map((t) => ({
       ...t,
       parameters: optionalToNullable(t.parameters),
