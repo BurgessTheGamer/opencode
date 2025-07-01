@@ -1,25 +1,16 @@
-2025/07/01 01:46:25 Browser server listening on port 9876
-2025/07/01 01:46:40 Request: method=search, params=map[maxResults:2 query:OpenCode browser tools]
-2025/07/01 01:46:40 Search request: query=OpenCode browser tools, maxResults=2
-2025/07/01 01:46:42 Search results: 2 found
-2025/07/01 01:46:48 Request: method=scrape, params=map[format:text includeScreenshot:false url:https://example.com]
-2025/07/01 01:46:53 Request: method=screenshot, params=map[fullPage:false url:https://example.com]
-2025/07/01 01:46:53 Screenshot request: url=https://example.com
-2025/07/01 01:47:00 Request: method=extract, params=map[multiple:false selectors:map[link:a paragraph:p title:h1] url:https://example.com]
-2025/07/01 01:47:11 Request: method=automate, params=map[actions:[map[text:1000 type:wait] map[type:screenshot] map[selector:a type:click]] url:https://example.com]
-2025/07/01 02:00:13 Request: method=automate_pro, params=map[actions:[map[selector:button type:click]] aiProvider:claude-3-5-sonnet-20241022 solveCaptchas:true url:https://example.com]
-2025/07/01 02:00:18 Request: method=scrape_pro, params=map[aiProvider:claude-3-5-sonnet-20241022 format:markdown includeScreenshot:false solveCaptchas:true url:https://example.com]
-2025/07/01 02:03:04 Request: method=automate_pro, params=map[actions:[map[selector:button type:click]] aiProvider:claude-3-5-sonnet-20241022 solveCaptchas:true url:https://example.com]
-2025/07/01 02:03:10 Request: method=scrape_pro, params=map[aiProvider:claude-3-5-sonnet-20241022 format:markdown includeScreenshot:false solveCaptchas:true url:https://example.com]
-2025/07/01 02:03:52 Request: method=automate_pro, params=map[actions:[map[selector:button type:click]] aiProvider:claude-3-5-sonnet-20241022 solveCaptchas:true url:https://example.com]
-2025/07/01 02:03:58 Request: method=scrape_pro, params=map[aiProvider:claude-3-5-sonnet-20241022 format:markdown includeScreenshot:false solveCaptchas:true url:https://example.com]
-2025/07/01 02:06:37 Request: method=search, params=map[maxResults:5 query:OpenAI GPT-4 latest news]
-2025/07/01 02:06:37 Search request: query=OpenAI GPT-4 latest news, maxResults=5
-2025/07/01 02:06:38 Search results: 5 found
-2025/07/01 02:06:44 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://example.com]
-2025/07/01 02:06:49 Request: method=screenshot, params=map[fullPage:true url:https://example.com]
-2025/07/01 02:06:49 Screenshot request: url=https://example.com
-2025/07/01 02:06:54 Request: method=automate, params=map[actions:[map[type:screenshot] map[selector:a timeout:2000 type:click]] url:https://example.com]
-2025/07/01 02:07:59 Request: method=extract, params=map[multiple:false selectors:map[link:a paragraph:p title:h1] url:https://example.com]
-2025/07/01 02:08:05 Request: method=scrape_pro, params=map[aiProvider:claude-3-5-sonnet captchaSolving:true format:markdown includeScreenshot:false solveCaptchas:true url:https://example.com]
-2025/07/01 02:08:10 Request: method=crawl, params=map[maxDepth:1 maxPages:3 respectRobots:true startUrl:https://example.com]
+2025/07/01 15:52:01 Browser server listening on port 9876
+2025/07/01 15:52:10 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://example.com]
+2025/07/01 15:54:02 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://news.ycombinator.com]
+2025/07/01 15:54:11 Request: method=screenshot, params=map[fullPage:false url:https://github.com/sst/opencode]
+2025/07/01 15:54:11 Screenshot request: url=https://github.com/sst/opencode
+2025/07/01 15:54:21 Request: method=extract, params=map[multiple:false selectors:map[allTitles:.titleline > a topStory:.titleline > a:first-child topStoryComments:.subline > a:last-child topStoryPoints:.score:first] url:https://news.ycombinator.com]
+2025/07/01 15:54:28 Request: method=crawl, params=map[maxDepth:1 maxPages:2 respectRobots:true startUrl:https://example.com]
+2025/07/01 15:54:35 Request: method=automate, params=map[actions:[map[type:screenshot] map[timeout:500 type:wait] map[selector:body type:scroll]] url:https://example.com]
+2025/07/01 15:54:42 Request: method=scrape_pro, params=map[aiProvider:claude-3-5-sonnet-20241022 format:markdown includeScreenshot:false solveCaptchas:true url:https://example.com]
+2025/07/01 15:54:49 Request: method=automate_pro, params=map[actions:[map[type:screenshot] map[selector:a timeout:1000 type:click]] aiProvider:claude-3-5-sonnet-20241022 solveCaptchas:true url:https://example.com]
+2025/07/01 16:04:48 Request: method=screenshot, params=map[fullPage:false url:https://www.amazon.com]
+2025/07/01 16:04:48 Screenshot request: url=https://www.amazon.com
+2025/07/01 16:04:56 Request: method=scrape_pro, params=map[aiProvider:claude-3-5-sonnet-20241022 format:markdown includeScreenshot:true solveCaptchas:true url:https://www.wikipedia.org]
+2025/07/01 16:05:42 Request: method=automate, params=map[actions:[map[type:screenshot] map[selector:textarea[name='q'] text:OpenCode browser automation test type:type] map[timeout:1000 type:wait] map[type:screenshot]] url:https://www.google.com]
+2025/07/01 16:05:49 Request: method=automate, params=map[actions:[map[type:screenshot] map[selector:input[name='q'] text:OpenCode test type:type] map[timeout:500 type:wait] map[selector:button[type='submit'] type:click]] url:https://duckduckgo.com]
+2025/07/01 16:05:57 Request: method=automate_pro, params=map[actions:[map[type:screenshot] map[selector:a[href='/sst/opencode/issues'] timeout:2000 type:click]] aiProvider:claude-3-5-sonnet-20241022 solveCaptchas:true url:https://github.com/sst/opencode]

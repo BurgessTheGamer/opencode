@@ -85,47 +85,6 @@ export const OpenBrowserScrapeTool = Tool.define({
   },
 })
 
-// 2. Search tool using DuckDuckGo (FREE!)
-export const OpenBrowserSearchTool = Tool.define({
-  id: "openbrowser_search",
-  description: "Search the web using DuckDuckGo (FREE, no API key required!)",
-  parameters: z.object({
-    query: z.string().describe("Search query"),
-    maxResults: z.number().default(10),
-    region: z.string().optional().describe("Region code (e.g., 'us-en')"),
-  }),
-  async execute(params) {
-    const result = await callGoBrowser("search", params)
-
-    // Handle empty or null results
-    if (!result || !result.results) {
-      return {
-        output: `No results found for "${params.query}"`,
-        metadata: {
-          title: `Search: ${params.query}`,
-          url: "DuckDuckGo Search",
-          resultsFound: 0,
-          searchEngine: "DuckDuckGo (via Go Browser)",
-        },
-      }
-    }
-
-    const formattedResults = result.results.map(
-      (r: any, i: number) =>
-        `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.snippet || ""}`,
-    )
-
-    return {
-      output: `Found ${result.results.length} results for "${params.query}":\n\n${formattedResults.join("\n\n")}`,
-      metadata: {
-        title: `Search: ${params.query}`,
-        url: "DuckDuckGo Search",
-        resultsFound: result.results.length,
-        searchEngine: "DuckDuckGo (via Go Browser)",
-      },
-    }
-  },
-})
 
 // 3. CrawlWebpages - Multi-page crawling
 export const OpenBrowserCrawlTool = Tool.define({

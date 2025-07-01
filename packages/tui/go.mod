@@ -11,10 +11,7 @@ require (
 	github.com/charmbracelet/glamour v0.10.0
 	github.com/charmbracelet/lipgloss/v2 v2.0.0-beta.1
 	github.com/charmbracelet/x/ansi v0.8.0
-	github.com/fogleman/gg v1.3.0
-	github.com/gocolly/colly/v2 v2.1.0
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
-	github.com/headzoo/surf v1.0.1
+	github.com/chromedp/chromedp v0.13.7
 	github.com/kbinani/screenshot v0.0.0-20250624051815-089614a94018
 	github.com/lithammer/fuzzysearch v1.1.8
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6
@@ -31,18 +28,13 @@ require golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
-	github.com/antchfx/htmlquery v1.2.3 // indirect
-	github.com/antchfx/xmlquery v1.2.4 // indirect
-	github.com/antchfx/xpath v1.1.8 // indirect
 	github.com/atombender/go-jsonschema v0.20.0 // indirect
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834 // indirect
 	github.com/charmbracelet/x/exp/slice v0.0.0-20250327172914-2fdc97757edf // indirect
 	github.com/charmbracelet/x/input v0.3.5-0.20250424101541-abb4d9a9b197 // indirect
 	github.com/charmbracelet/x/windows v0.2.1 // indirect
 	github.com/chromedp/cdproto v0.0.0-20250403032234-65de8f5d025b // indirect
-	github.com/chromedp/chromedp v0.13.7 // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect
-	github.com/dop251/goja v0.0.0-20250630131328-58d95d85e994 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/gen2brain/shm v0.1.0 // indirect
@@ -50,21 +42,14 @@ require (
 	github.com/go-json-experiment/json v0.0.0-20250211171154-1ae217ad3535 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
-	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.4.0 // indirect
 	github.com/goccy/go-yaml v1.17.1 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
-	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
-	github.com/headzoo/ut v0.0.0-20181013193318-a13b5a7a02ca // indirect
 	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/kennygrant/sanitize v1.2.4 // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
@@ -72,20 +57,16 @@ require (
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/sanity-io/litter v1.5.8 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/speakeasy-api/openapi-overlay v0.9.0 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
-	github.com/temoto/robotstxt v1.1.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/tools v0.31.0 // indirect
-	google.golang.org/appengine v1.6.6 // indirect
-	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
