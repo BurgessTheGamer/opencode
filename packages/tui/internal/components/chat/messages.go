@@ -72,6 +72,8 @@ type messagesComponent struct {
 	selection          TextSelection
 	rawContent         []string // Store raw text lines for selection
 	selectionDragging  bool
+	updateTimer        *time.Timer
+	pendingUpdate      bool
 }
 type renderFinishedMsg struct{}
 type ToggleToolDetailsMsg struct{}
@@ -152,9 +154,17 @@ func (m *messagesComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.GotoBottom()
 		}
 	case opencode.EventListResponseEventSessionUpdated, opencode.EventListResponseEventMessageUpdated:
-		m.renderView()
-		if m.tail {
-			m.viewport.GotoBottom()
+		// Skip rendering if we're already rendering to prevent flooding
+		if !m.rendering {
+			m.rendering = true
+			m.renderView()
+			if m.tail {
+				m.viewport.GotoBottom()
+			}
+			// Reset rendering flag after a short delay
+			return m, tea.Tick(time.Millisecond*50, func(time.Time) tea.Msg {
+				return renderFinishedMsg{}
+			})
 		}
 	}
 

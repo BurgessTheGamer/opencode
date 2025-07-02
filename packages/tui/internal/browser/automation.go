@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/chromedp"
 	"github.com/chromedp/chromedp/kb"
 )
@@ -83,20 +84,18 @@ func (e *Engine) executeAction(ctx context.Context, action Action) ActionResult 
 
 	switch action.Type {
 	case "click":
-		err = chromedp.Run(ctx,
-			chromedp.WaitVisible(action.Selector),
-			chromedp.Click(action.Selector),
-		)
+		// Try multiple strategies for clicking
+		err = e.robustClick(ctx, action.Selector)
 		if err == nil {
 			result.Message = fmt.Sprintf("Clicked element: %s", action.Selector)
 		}
 
 	case "type":
-		err = chromedp.Run(ctx,
-			chromedp.WaitVisible(action.Selector),
-			chromedp.Clear(action.Selector),
-			chromedp.SendKeys(action.Selector, action.Text),
-		)
+		// Try multiple strategies for typing
+		err = e.robustType(ctx, action.Selector, action.Text)
+		if err == nil {
+			result.Message = fmt.Sprintf("Typed text into: %s", action.Selector)
+		}
 
 	case "wait":
 		if action.Selector != "" {
@@ -192,4 +191,134 @@ func (e *Engine) executeAction(ctx context.Context, action Action) ActionResult 
 	}
 
 	return result
+}
+
+// robustClick tries multiple strategies to click an element
+func (e *Engine) robustClick(ctx context.Context, selector string) error {
+	// Get current URL to determine site-specific selectors
+	var currentURL string
+	chromedp.Run(ctx, chromedp.Location(&currentURL))
+
+	// Strategy 1: Standard click with wait
+	err := chromedp.Run(ctx,
+		chromedp.WaitVisible(selector),
+		chromedp.Click(selector),
+	)
+	if err == nil {
+		return nil
+	}
+
+	// Strategy 2: JavaScript click with scroll into view
+	err = chromedp.Run(ctx,
+		chromedp.Evaluate(fmt.Sprintf(`
+			const elem = document.querySelector('%s');
+			if (elem) {
+				elem.scrollIntoView({behavior: 'smooth', block: 'center'});
+				setTimeout(() => elem.click(), 100);
+				true;
+			} else {
+				false;
+			}
+		`, selector), nil),
+	)
+	if err == nil {
+		time.Sleep(200 * time.Millisecond) // Allow click to process
+		return nil
+	}
+
+	// Strategy 3: Try with different selector strategies
+	selectors := []string{
+		selector,
+		fmt.Sprintf("[aria-label*='%s']", selector),
+		fmt.Sprintf("[data-testid='%s']", selector),
+		fmt.Sprintf("[placeholder*='%s']", selector),
+		fmt.Sprintf("[title*='%s']", selector),
+		fmt.Sprintf("[alt*='%s']", selector),
+	}
+
+	for _, sel := range selectors {
+		err = chromedp.Run(ctx,
+			chromedp.Click(sel, chromedp.NodeVisible),
+		)
+		if err == nil {
+			return nil
+		}
+	}
+
+	// Strategy 4: Force click with JavaScript
+	err = chromedp.Run(ctx,
+		chromedp.Evaluate(fmt.Sprintf(`
+			const elem = document.querySelector('%s');
+			if (elem) {
+				// Remove any overlays
+				const overlays = document.querySelectorAll('[style*="z-index: 9"], [style*="z-index: 10"], .modal-backdrop, .overlay');
+				overlays.forEach(o => o.style.display = 'none');
+				
+				// Force click
+				const event = new MouseEvent('click', {
+					view: window,
+					bubbles: true,
+					cancelable: true
+				});
+				elem.dispatchEvent(event);
+				true;
+			} else {
+				false;
+			}
+		`, selector), nil),
+	)
+	if err == nil {
+		return nil
+	}
+
+	// Strategy 5: Mouse click at element position
+	var nodes []*cdp.Node
+	err = chromedp.Run(ctx,
+		chromedp.Nodes(selector, &nodes, chromedp.ByQuery),
+	)
+	if err == nil && len(nodes) > 0 {
+		return chromedp.Run(ctx,
+			chromedp.MouseClickNode(nodes[0]),
+		)
+	}
+
+	return fmt.Errorf("failed to click element: %s", selector)
+}
+
+// robustType tries multiple strategies to type text
+func (e *Engine) robustType(ctx context.Context, selector string, text string) error {
+	// Strategy 1: Standard type
+	err := chromedp.Run(ctx,
+		chromedp.WaitVisible(selector),
+		chromedp.Clear(selector),
+		chromedp.SendKeys(selector, text),
+	)
+	if err == nil {
+		return nil
+	}
+
+	// Strategy 2: JavaScript value setting
+	err = chromedp.Run(ctx,
+		chromedp.Evaluate(fmt.Sprintf(`
+			const elem = document.querySelector('%s');
+			if (elem) {
+				elem.focus();
+				elem.value = '%s';
+				elem.dispatchEvent(new Event('input', {bubbles: true}));
+				elem.dispatchEvent(new Event('change', {bubbles: true}));
+				true;
+			} else {
+				false;
+			}
+		`, selector, text), nil),
+	)
+	if err == nil {
+		return nil
+	}
+
+	// Strategy 3: Focus and type
+	return chromedp.Run(ctx,
+		chromedp.Focus(selector),
+		chromedp.SendKeys(selector, text, chromedp.NodeVisible),
+	)
 }

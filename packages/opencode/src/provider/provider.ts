@@ -21,6 +21,8 @@ import {
   OpenBrowserAutomateProTool,
   OpenBrowserScrapeProTool,
 } from "../tool/openbrowser-captcha"
+import { OpenBrowserChatCaptchaTools } from "../tool/openbrowser-captcha-chat"
+import { OpenStorageTools } from "../tool/openstorage"
 import { AuthAnthropic } from "../auth/anthropic"
 import { AuthCopilot } from "../auth/copilot"
 import { ModelsDev } from "./models"
@@ -468,10 +470,15 @@ export namespace Provider {
     TodoReadTool,
     // TaskTool,
     ...OpenBrowserTools,
+    ...OpenStorageTools,
   ]
 
   // Pro/Max exclusive tools (only for Claude 3.5 Sonnet)
-  const PRO_TOOLS = [OpenBrowserAutomateProTool, OpenBrowserScrapeProTool]
+  const PRO_TOOLS = [
+    OpenBrowserAutomateProTool,
+    OpenBrowserScrapeProTool,
+    ...OpenBrowserChatCaptchaTools,
+  ]
 
   const TOOL_MAPPING: Record<string, Tool.Info[]> = {
     anthropic: [...TOOLS.filter((t) => t.id !== "patch"), ...PRO_TOOLS],

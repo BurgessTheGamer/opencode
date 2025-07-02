@@ -9,10 +9,7 @@ describe("OpenBrowser CAPTCHA Tools", () => {
     it("should have correct tool definition", () => {
       expect(OpenBrowserAutomateProTool.id).toBe("openbrowser_automate_pro")
       expect(OpenBrowserAutomateProTool.description).toContain(
-        "CAPTCHA solving",
-      )
-      expect(OpenBrowserAutomateProTool.description).toContain(
-        "Claude Computer Use",
+        "CAPTCHA detection",
       )
     })
 
@@ -22,7 +19,7 @@ describe("OpenBrowser CAPTCHA Tools", () => {
 
       expect(shape.url).toBeDefined()
       expect(shape.actions).toBeDefined()
-      expect(shape.solveCaptchas).toBeDefined()
+      // solveCaptchas removed - now uses chat-based flow
       expect(shape.profileId).toBeDefined()
     })
 
@@ -31,24 +28,22 @@ describe("OpenBrowser CAPTCHA Tools", () => {
         {
           url: "https://example.com",
           actions: [{ type: "click", selector: "button" }],
-          solveCaptchas: true,
         },
         {} as any, // Mock context
       )
 
       // Either succeeds (if browser server is running) or fails gracefully
       expect(result.output).toBeDefined()
-      expect(result.metadata.feature).toBe("Pro/Max Exclusive")
-      expect(result.metadata.browserEngine).toContain("Chrome")
+      expect(result.metadata["title"]).toBeDefined()
+      expect(result.metadata["profileId"]).toBeDefined()
     })
   })
 
   describe("OpenBrowserScrapeProTool", () => {
     it("should have correct tool definition", () => {
       expect(OpenBrowserScrapeProTool.id).toBe("openbrowser_scrape_pro")
-      expect(OpenBrowserScrapeProTool.description).toContain("CAPTCHA solving")
       expect(OpenBrowserScrapeProTool.description).toContain(
-        "Claude Computer Use",
+        "CAPTCHA detection",
       )
     })
 
@@ -59,7 +54,7 @@ describe("OpenBrowser CAPTCHA Tools", () => {
       expect(shape.url).toBeDefined()
       expect(shape.format).toBeDefined()
       expect(shape.includeScreenshot).toBeDefined()
-      expect(shape.solveCaptchas).toBeDefined()
+      // solveCaptchas removed - now uses chat-based flow
       expect(shape.profileId).toBeDefined()
     })
 
@@ -69,15 +64,14 @@ describe("OpenBrowser CAPTCHA Tools", () => {
           url: "https://example.com",
           format: "markdown",
           includeScreenshot: false,
-          solveCaptchas: true,
         },
         {} as any, // Mock context
       )
 
       // Either succeeds (if browser server is running) or fails gracefully
       expect(result.output).toBeDefined()
-      expect(result.metadata.feature).toContain("Pro/Max Exclusive")
-      expect(result.metadata.browserEngine).toContain("Chrome")
+      expect(result.metadata["title"]).toBeDefined()
+      expect(result.metadata["profileId"]).toBeDefined()
     })
   })
 })

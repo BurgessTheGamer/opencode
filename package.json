@@ -20,8 +20,12 @@
     }
   },
   "devDependencies": {
+    "@biomejs/biome": "2.0.5",
+    "husky": "9.1.7",
+    "lint-staged": "16.1.2",
     "prettier": "3.5.3",
-    "sst": "3.17.6"
+    "sst": "3.17.6",
+    "ultracite": "5.0.29"
   },
   "repository": {
     "type": "git",
@@ -41,5 +45,10 @@
   ],
   "patchedDependencies": {
     "ai@4.3.16": "patches/ai@4.3.16.patch"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
+      "npx ultracite format"
+    ]
   }
 }

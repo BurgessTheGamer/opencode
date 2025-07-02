@@ -1,18 +1,13 @@
 import { z } from "zod"
 import { Tool } from "./tool"
 
-// CAPTCHA solving integration for browser automation
-// This extends the browser server to support CAPTCHA solving with Claude
+// Pro tools that detect CAPTCHAs and guide users to the chat-based solving flow
+// These tools enhance the basic browser tools with CAPTCHA detection
 
-// Helper to call browser server with CAPTCHA solving
-async function callBrowserWithCaptcha(
-  method: string,
-  params: any,
-  ctx?: any, // Tool context with access to session
-): Promise<any> {
+// Helper to call browser server
+async function callBrowserServer(method: string, params: any): Promise<any> {
   const browserUrl = `http://localhost:9876`
 
-  // First attempt without CAPTCHA solving
   const response = await fetch(browserUrl, {
     method: "POST",
     headers: {
@@ -20,11 +15,7 @@ async function callBrowserWithCaptcha(
     },
     body: JSON.stringify({
       method,
-      params: {
-        ...params,
-        solveCaptchas: true,
-        aiProvider: "claude-3-5-sonnet-20241022",
-      },
+      params,
     }),
   })
 
@@ -32,134 +23,14 @@ async function callBrowserWithCaptcha(
     throw new Error(`Browser server error: ${response.statusText}`)
   }
 
-  const result = await response.json()
-
-  // Check if CAPTCHA was detected
-  if (result.success && result.data?.captcha?.detected) {
-    const captchaData = result.data.captcha
-
-    // Use Claude Vision to solve the CAPTCHA
-    if (captchaData.screenshot && ctx) {
-      // This would integrate with OpenCode's existing Claude connection
-      const solution = await solveCaptchaWithClaude(
-        captchaData.screenshot,
-        captchaData.type || "unknown",
-        ctx,
-      )
-
-      // Send solution back to browser server
-      await fetch(browserUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          method: "apply_captcha_solution",
-          params: {
-            profileId: params.profileId,
-            solution: solution,
-          },
-        }),
-      })
-
-      // Retry original request
-      return callBrowserWithCaptcha(method, params, ctx)
-    }
-  }
-
-  if (!result.success) {
-    throw new Error(result.error || "Unknown browser error")
-  }
-
-  return result.data
+  return response.json()
 }
 
-// Helper to solve CAPTCHA using Claude Vision
-async function solveCaptchaWithClaude(
-  screenshotBase64: string,
-  captchaType: string,
-  ctx: any,
-): Promise<any> {
-  // Access the Claude provider through the session context
-  if (!ctx.sessionID) {
-    throw new Error("No session context available for Claude Vision")
-  }
-
-  try {
-    // Import necessary modules
-    const { Provider } = await import("../provider/provider")
-    const { generateText } = await import("ai")
-
-    // Get Claude model for vision tasks
-    const model = await Provider.getModel(
-      "anthropic",
-      "claude-3-5-sonnet-20241022",
-    )
-
-    // Prepare the prompt based on CAPTCHA type
-    let prompt = "You are helping solve a CAPTCHA. "
-
-    switch (captchaType) {
-      case "recaptcha":
-        prompt +=
-          "This is a reCAPTCHA. Please identify all images that match the given criteria."
-        break
-      case "hcaptcha":
-        prompt +=
-          "This is an hCaptcha. Please identify all images that match the given criteria."
-        break
-      case "text":
-        prompt +=
-          "Please read the text shown in this CAPTCHA image and return ONLY the text, nothing else."
-        break
-      default:
-        prompt +=
-          "Please solve this CAPTCHA by following the instructions shown."
-    }
-
-    // Call Claude Vision API
-    const result = await generateText({
-      model: model.language,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: prompt,
-            },
-            {
-              type: "image",
-              image: `data:image/png;base64,${screenshotBase64}`,
-            },
-          ],
-        },
-      ],
-      maxTokens: 100,
-      temperature: 0.1, // Low temperature for accuracy
-    })
-
-    // Parse the response
-    const solution = result.text.trim()
-
-    // Return structured solution
-    return {
-      type: captchaType === "text" ? "text" : "selection",
-      solution: solution,
-      confidence: 0.95,
-      instructions: `Claude Vision solved ${captchaType} CAPTCHA`,
-    }
-  } catch (error: any) {
-    console.error("Failed to solve CAPTCHA with Claude:", error)
-    throw new Error(`CAPTCHA solving failed: ${error.message}`)
-  }
-}
-
-// Enhanced automation with CAPTCHA solving (Pro/Max feature)
+// Enhanced automation with CAPTCHA detection (Pro/Max feature)
 export const OpenBrowserAutomateProTool = Tool.define({
   id: "openbrowser_automate_pro",
-  description: `Advanced browser automation with automatic CAPTCHA solving
-- Uses Claude Computer Use to solve CAPTCHAs
+  description: `Advanced browser automation with CAPTCHA detection
+- Detects CAPTCHAs and guides you through the chat-based solving flow
 - Pro/Max exclusive feature
 - Handles reCAPTCHA, hCaptcha, and image CAPTCHAs`,
   parameters: z.object({
@@ -174,36 +45,61 @@ export const OpenBrowserAutomateProTool = Tool.define({
         }),
       )
       .describe("List of actions to perform"),
-    solveCaptchas: z
-      .boolean()
-      .default(true)
-      .describe("Automatically solve CAPTCHAs with Claude"),
     profileId: z.string().optional().describe("Browser profile to use"),
   }),
-  async execute(params) {
+  async execute(params, _ctx): Promise<{ output: string; metadata: any }> {
     try {
-      const result = await callBrowserWithCaptcha("automate_pro", params)
+      const profileId = params.profileId || "default"
+      const result = await callBrowserServer("automate_pro", {
+        ...params,
+        profileId,
+        solveCaptchas: false, // We don't auto-solve, we guide to chat flow
+      })
 
-      const captchaInfo =
-        result.captchasSolved > 0
-          ? `\n\nCAPTCHAs solved: ${result.captchasSolved} (using Claude Computer Use)`
-          : ""
+      // Check if CAPTCHA was detected during automation
+      if (result.data?.captchaDetected) {
+        const completedActions = result.data.actionsCompleted || 0
+        return {
+          output: `🛑 CAPTCHA detected during automation!
 
+Actions completed before CAPTCHA: ${completedActions}/${params.actions.length}
+
+To solve the CAPTCHA and continue:
+1. Run: openbrowser_get_captcha --url "${result.data.currentUrl || params.url}" --profileId "${profileId}"
+2. I'll analyze the CAPTCHA image
+3. Run: openbrowser_apply_captcha_solution with my solution
+4. Resume automation with remaining actions
+
+Profile ID: ${profileId} (use this for all commands)`,
+          metadata: {
+            title: "Automation Paused - CAPTCHA Detected",
+            url: result.data.currentUrl || params.url,
+            profileId,
+            captchaDetected: true,
+            actionsCompleted: completedActions,
+            totalActions: params.actions.length,
+            remainingActions: params.actions.slice(completedActions),
+          },
+        }
+      }
+
+      // Success - no CAPTCHA encountered
       return {
-        output: `Automation completed:\n${result.actions
-          .map(
-            (a: any) =>
-              `- ${a.type}: ${a.success ? "✓" : "✗"} ${a.message || ""}`,
-          )
-          .join("\n")}${captchaInfo}\n\nFinal URL: ${result.finalUrl}`,
+        output: `Automation completed successfully:\n${
+          result.data.actions
+            ?.map(
+              (a: any) =>
+                `- ${a.type}: ${a.success ? "✓" : "✗"} ${a.message || ""}`,
+            )
+            .join("\n") || "No actions performed"
+        }\n\nFinal URL: ${result.data.finalUrl || params.url}`,
         metadata: {
-          title: "Pro Browser Automation",
-          url: result.finalUrl,
-          actionsPerformed: result.actions.length,
-          captchasSolved: result.captchasSolved || 0,
-          success: result.actions.every((a: any) => a.success),
-          browserEngine: "Chrome with Claude CAPTCHA Solving",
-          feature: "Pro/Max Exclusive",
+          title: "Pro Browser Automation Complete",
+          url: result.data.finalUrl || params.url,
+          profileId,
+          actionsPerformed: result.data.actions?.length || 0,
+          success: result.data.actions?.every((a: any) => a.success) || false,
+          captchaDetected: false,
         },
       }
     } catch (error: any) {
@@ -212,55 +108,70 @@ export const OpenBrowserAutomateProTool = Tool.define({
         metadata: {
           title: "Pro Browser Automation Failed",
           error: error.message,
-          feature: "Pro/Max Exclusive",
           url: params.url,
-          actionsPerformed: 0,
-          captchasSolved: 0,
-          success: false,
-          browserEngine: "Chrome with Claude CAPTCHA Solving",
+          profileId: params.profileId || "default",
         },
       }
     }
   },
 })
 
-// Enhanced scraping with CAPTCHA bypass
+// Enhanced scraping with CAPTCHA detection
 export const OpenBrowserScrapeProTool = Tool.define({
   id: "openbrowser_scrape_pro",
-  description: `Advanced web scraping with automatic CAPTCHA solving
-- Bypasses CAPTCHAs using Claude Computer Use
+  description: `Advanced web scraping with CAPTCHA detection
+- Detects CAPTCHAs and guides you through the chat-based solving flow
 - Pro/Max exclusive feature`,
   parameters: z.object({
     url: z.string().describe("The URL to scrape"),
     format: z.enum(["markdown", "html", "text"]).default("markdown"),
     includeScreenshot: z.boolean().default(false),
     waitForSelector: z.string().optional().describe("CSS selector to wait for"),
-    solveCaptchas: z
-      .boolean()
-      .default(true)
-      .describe("Automatically solve CAPTCHAs"),
     profileId: z.string().optional().describe("Browser profile to use"),
   }),
-  async execute(params) {
+  async execute(params, _ctx): Promise<{ output: string; metadata: any }> {
     try {
-      const result = await callBrowserWithCaptcha("scrape_pro", params)
+      const profileId = params.profileId || "default"
+      const result = await callBrowserServer("scrape_pro", {
+        ...params,
+        profileId,
+        solveCaptchas: false, // We don't auto-solve, we guide to chat flow
+      })
 
-      const captchaInfo = result.captchaSolved
-        ? " (CAPTCHA solved with Claude)"
-        : ""
+      // Check if CAPTCHA was detected
+      if (result.data?.captchaDetected) {
+        return {
+          output: `🛑 CAPTCHA detected on ${params.url}!
 
+To solve the CAPTCHA and scrape the page:
+1. Run: openbrowser_get_captcha --url "${params.url}" --profileId "${profileId}"
+2. I'll analyze the CAPTCHA image
+3. Run: openbrowser_apply_captcha_solution with my solution
+4. Retry this scrape with --profileId "${profileId}"
+
+Profile ID: ${profileId} (use this for all commands)`,
+          metadata: {
+            title: "Scraping Blocked - CAPTCHA Detected",
+            url: params.url,
+            profileId,
+            captchaDetected: true,
+            format: params.format,
+          },
+        }
+      }
+
+      // Success - no CAPTCHA
       return {
-        output: result.content,
+        output: result.data?.content || "Page scraped successfully",
         metadata: {
-          title: result.title || "Pro Web Scrape",
+          title: result.data?.title || "Pro Web Scrape Complete",
           url: params.url,
+          profileId,
           format: params.format,
-          browserEngine: "Chrome with Claude CAPTCHA Solving",
-          captchaSolved: result.captchaSolved || false,
-          links: result.links?.length || 0,
-          images: result.images?.length || 0,
-          screenshot: result.screenshot ? "included" : "not included",
-          feature: "Pro/Max Exclusive" + captchaInfo,
+          captchaDetected: false,
+          links: result.data?.links?.length || 0,
+          images: result.data?.images?.length || 0,
+          screenshot: params.includeScreenshot ? "included" : "not included",
         },
       }
     } catch (error: any) {
@@ -269,13 +180,7 @@ export const OpenBrowserScrapeProTool = Tool.define({
         metadata: {
           title: "Pro Scraping Failed",
           url: params.url,
-          format: params.format,
-          browserEngine: "Chrome with Claude CAPTCHA Solving",
-          captchaSolved: false,
-          links: 0,
-          images: 0,
-          screenshot: "not included",
-          feature: "Pro/Max Exclusive",
+          profileId: params.profileId || "default",
           error: error.message,
         },
       }

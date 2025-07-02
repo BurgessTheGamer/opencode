@@ -75,6 +75,12 @@ func (e *Engine) ScrapeWebpage(params ScrapeParams) (*Page, error) {
 		return nil, fmt.Errorf("failed to scrape page: %w", err)
 	}
 
+	// Check for CAPTCHA after page load
+	if err := e.DetectAndSolveCaptcha(timeoutCtx); err != nil {
+		// Return the error so the Pro handler can deal with it
+		return nil, err
+	}
+
 	page.Title = title
 	page.HTML = htmlContent
 
