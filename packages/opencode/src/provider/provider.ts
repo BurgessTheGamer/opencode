@@ -21,7 +21,7 @@ import {
   OpenBrowserAutomateProTool,
   OpenBrowserScrapeProTool,
 } from "../tool/openbrowser-captcha"
-import { OpenBrowserChatCaptchaTools } from "../tool/openbrowser-captcha-chat"
+// import { OpenBrowserChatCaptchaTools } from "../tool/openbrowser-captcha-chat"
 import { OpenStorageTools } from "../tool/openstorage"
 import { AuthAnthropic } from "../auth/anthropic"
 import { AuthCopilot } from "../auth/copilot"
@@ -477,7 +477,7 @@ export namespace Provider {
   const PRO_TOOLS = [
     OpenBrowserAutomateProTool,
     OpenBrowserScrapeProTool,
-    ...OpenBrowserChatCaptchaTools,
+    // ...OpenBrowserChatCaptchaTools,
   ]
 
   const TOOL_MAPPING: Record<string, Tool.Info[]> = {
