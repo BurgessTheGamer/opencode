@@ -20,6 +20,7 @@ type Browser interface {
 	ExtractStructuredData(params ExtractParams) (interface{}, error)
 	BrowserAutomation(params AutomationParams) (*AutomationResult, error)
 	TakeWebScreenshot(params ScreenshotParams) ([]byte, int, int, error)
+	ExecuteScript(params ScriptParams) (interface{}, error)
 
 	// Profile management
 	CreateProfile(params CreateProfileParams) (*Profile, error)

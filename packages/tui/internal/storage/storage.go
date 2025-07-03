@@ -33,6 +33,7 @@ type Storage interface {
 
 	// Cleanup
 	DeleteOldContent(ctx context.Context, before time.Time) error
+	DeleteAllContent(ctx context.Context) error
 	Close() error
 }
 
@@ -309,6 +310,21 @@ func (e *Engine) DeleteOldContent(ctx context.Context, before time.Time) error {
 	_, err := e.db.NewDelete().
 		Model((*Content)(nil)).
 		Where("created_at < ?", before).
+		Exec(ctx)
+	return err
+}
+
+// DeleteAllContent removes all content from storage
+func (e *Engine) DeleteAllContent(ctx context.Context) error {
+	// Delete from FTS table first
+	_, err := e.db.ExecContext(ctx, "DELETE FROM content_fts")
+	if err != nil {
+		return err
+	}
+
+	// Delete all content
+	_, err = e.db.NewDelete().
+		Model((*Content)(nil)).
 		Exec(ctx)
 	return err
 }

@@ -39,6 +39,14 @@ type ScrapeParams struct {
 	Timeout           int    `json:"timeout,omitempty"`   // Timeout in milliseconds
 }
 
+// ScriptParams defines parameters for script execution
+type ScriptParams struct {
+	URL       string `json:"url"`
+	Script    string `json:"script"`
+	ProfileID string `json:"profileId,omitempty"`
+	Timeout   int    `json:"timeout,omitempty"`
+}
+
 // Search removed - AIs already know URLs!
 
 // CrawlParams defines parameters for web crawling

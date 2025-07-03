@@ -20,6 +20,8 @@ import { OpenBrowserTools } from "../tool/openbrowser"
 import {
   OpenBrowserAutomateProTool,
   OpenBrowserScrapeProTool,
+  OpenBrowserGetCaptchaTool,
+  OpenBrowserApplyCaptchaSolutionTool,
 } from "../tool/openbrowser-captcha"
 // import { OpenBrowserChatCaptchaTools } from "../tool/openbrowser-captcha-chat"
 import { OpenStorageTools } from "../tool/openstorage"
@@ -477,6 +479,8 @@ export namespace Provider {
   const PRO_TOOLS = [
     OpenBrowserAutomateProTool,
     OpenBrowserScrapeProTool,
+    OpenBrowserGetCaptchaTool,
+    OpenBrowserApplyCaptchaSolutionTool,
     // ...OpenBrowserChatCaptchaTools,
   ]
 

@@ -515,6 +515,45 @@ export const OpenStorageCleanupSessionTool = Tool.define({
   },
 })
 
+// 9. Clear all storage
+export const OpenStorageClearAllTool = Tool.define({
+  id: "openstorage_clear_all",
+  description: "Completely clear all content from storage (use with caution!)",
+  parameters: z.object({
+    confirm: z
+      .boolean()
+      .describe("Must be true to confirm clearing all storage"),
+  }),
+  async execute(params, _ctx) {
+    if (!params.confirm) {
+      return {
+        output: "Clear all operation cancelled. Set confirm=true to proceed.",
+        metadata: {
+          title: "Clear All Cancelled",
+          confirmed: false,
+          serverRestarted: false,
+        },
+      }
+    }
+
+    const result = await callStorage("clear_all", {})
+
+    // Restart the storage server to ensure clean state
+    await killStorageServer()
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await ensureStorageServer()
+
+    return {
+      output: result.message + "\nStorage server restarted for clean state.",
+      metadata: {
+        title: "Storage Cleared",
+        confirmed: true,
+        serverRestarted: true,
+      },
+    }
+  },
+})
+
 // Export all OpenStorage tools
 export const OpenStorageTools = [
   OpenStorageStoreTool,
@@ -525,6 +564,7 @@ export const OpenStorageTools = [
   OpenStorageListSessionsTool,
   OpenStorageCleanupTool,
   OpenStorageCleanupSessionTool,
+  OpenStorageClearAllTool,
 ]
 
 // Cleanup on exit

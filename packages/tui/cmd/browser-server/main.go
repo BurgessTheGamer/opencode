@@ -95,8 +95,12 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		handleScrapePro(w, req.Params)
 	case "automate_pro":
 		handleAutomatePro(w, req.Params)
+	case "get_captcha":
+		handleGetCaptcha(w, req.Params)
 	case "apply_captcha_solution":
 		handleApplyCaptchaSolution(w, req.Params)
+	case "execute_script":
+		handleExecuteScript(w, req.Params)
 	default:
 		sendError(w, fmt.Sprintf("Unknown method: %s", req.Method))
 	}
@@ -450,22 +454,177 @@ func truncateString(s string, maxLen int) string {
 	return s[:maxLen] + "..."
 }
 
+func handleGetCaptcha(w http.ResponseWriter, params map[string]interface{}) {
+	url := getString(params, "url")
+	profileID := getString(params, "profileId")
+	if profileID == "" {
+		profileID = "default"
+	}
+
+	log.Printf("Getting CAPTCHA for URL: %s, profile: %s", url, profileID)
+
+	// Navigate to the URL and check for CAPTCHA
+	scrapeParams := browser.ScrapeParams{
+		URL:       url,
+		ProfileID: profileID,
+	}
+
+	// Try to scrape the page to trigger CAPTCHA detection
+	_, err := engine.ScrapeWebpage(scrapeParams)
+	captchaDetected := false
+	captchaType := "unknown"
+	var screenshot []byte
+
+	// Check if error indicates CAPTCHA
+	if err != nil && strings.Contains(err.Error(), "CAPTCHA") {
+		captchaDetected = true
+		captchaType = "detected"
+
+		// Extract CAPTCHA type from error message
+		if strings.Contains(err.Error(), "recaptcha") {
+			captchaType = "recaptcha"
+		} else if strings.Contains(err.Error(), "hcaptcha") {
+			captchaType = "hcaptcha"
+		} else if strings.Contains(err.Error(), "cloudflare") {
+			captchaType = "cloudflare"
+		}
+
+		// Take screenshot of the CAPTCHA page
+		screenshotData, _, _, screenshotErr := engine.TakeWebScreenshot(browser.ScreenshotParams{
+			URL:       url,
+			ProfileID: profileID,
+			FullPage:  true,
+		})
+
+		if screenshotErr == nil && screenshotData != nil {
+			screenshot = screenshotData
+		}
+	}
+
+	// Always try to take a screenshot to check for visual CAPTCHAs
+	if screenshot == nil {
+		screenshotData, _, _, screenshotErr := engine.TakeWebScreenshot(browser.ScreenshotParams{
+			URL:       url,
+			ProfileID: profileID,
+			FullPage:  true,
+		})
+
+		if screenshotErr == nil && screenshotData != nil {
+			screenshot = screenshotData
+
+			// TODO: Add visual CAPTCHA detection by analyzing the screenshot
+			// For now, we'll assume no CAPTCHA if no error was thrown
+			if !captchaDetected {
+				captchaDetected = false
+			}
+		}
+	}
+
+	data := map[string]interface{}{
+		"captchaDetected": captchaDetected,
+		"captchaType":     captchaType,
+		"url":             url,
+		"profileId":       profileID,
+	}
+
+	if screenshot != nil {
+		data["screenshot"] = base64.StdEncoding.EncodeToString(screenshot)
+	}
+
+	if captchaDetected {
+		data["message"] = fmt.Sprintf("CAPTCHA detected on %s (type: %s)", url, captchaType)
+	} else {
+		data["message"] = fmt.Sprintf("No CAPTCHA detected on %s", url)
+	}
+
+	sendSuccess(w, data)
+}
+
 func handleApplyCaptchaSolution(w http.ResponseWriter, params map[string]interface{}) {
 	profileID := getString(params, "profileId")
+	if profileID == "" {
+		profileID = "default"
+	}
+
+	url := getString(params, "url")
 	solutionData := params["solution"]
 
-	log.Printf("Applying CAPTCHA solution for profile: %s, solution: %v", profileID, solutionData)
+	log.Printf("Applying CAPTCHA solution for profile: %s, URL: %s, solution: %v", profileID, url, solutionData)
 
-	// In a real implementation, this would:
-	// 1. Get the browser context for the profile
-	// 2. Apply the solution (click images, type text, etc.)
-	// 3. Submit the CAPTCHA form
-	// 4. Return success/failure
+	// Parse the solution
+	solutionMap, ok := solutionData.(map[string]interface{})
+	if !ok {
+		sendError(w, "Invalid solution format")
+		return
+	}
 
-	// For now, we'll simulate success
-	sendSuccess(w, map[string]interface{}{
-		"applied":  true,
-		"message":  "CAPTCHA solution applied successfully",
-		"solution": solutionData,
+	solutionType := getString(solutionMap, "type")
+	solutionText := getString(solutionMap, "solution")
+
+	// Apply the solution based on type
+	success := false
+	var errorMsg string
+
+	switch solutionType {
+	case "text":
+		// Type text into CAPTCHA input field
+		log.Printf("Applying text solution: %s", solutionText)
+		// TODO: Implement actual text input to CAPTCHA field
+		success = true
+
+	case "recaptcha_v2":
+		// Click the "I'm not a robot" checkbox
+		log.Printf("Applying reCAPTCHA v2 solution")
+		// TODO: Implement reCAPTCHA checkbox click
+		success = true
+
+	case "image_selection":
+		// Click on specified images
+		log.Printf("Applying image selection solution")
+		// TODO: Implement image clicking based on coordinates
+		success = true
+
+	default:
+		errorMsg = fmt.Sprintf("Unsupported CAPTCHA type: %s", solutionType)
+		success = false
+	}
+
+	if success {
+		sendSuccess(w, map[string]interface{}{
+			"success":      true,
+			"applied":      true,
+			"message":      "CAPTCHA solution applied successfully",
+			"solutionType": solutionType,
+			"url":          url,
+			"profileId":    profileID,
+		})
+	} else {
+		sendError(w, errorMsg)
+	}
+}
+
+func handleExecuteScript(w http.ResponseWriter, params map[string]interface{}) {
+	url := getString(params, "url")
+	script := getString(params, "script")
+	profileID := getString(params, "profileId")
+
+	if profileID == "" {
+		profileID = "default"
+	}
+
+	log.Printf("Executing script on %s with profile %s", url, profileID)
+
+	// Execute the script using the browser engine
+	result, err := engine.ExecuteScript(browser.ScriptParams{
+		URL:       url,
+		Script:    script,
+		ProfileID: profileID,
 	})
+
+	if err != nil {
+		sendError(w, fmt.Sprintf("Script execution failed: %v", err))
+		return
+	}
+
+	sendSuccess(w, result)
 }

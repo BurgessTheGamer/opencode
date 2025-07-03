@@ -1,34 +1,205 @@
-2025/07/01 18:57:44 Browser server listening on port 9876
-2025/07/01 18:57:56 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://example.com]
-2025/07/01 18:58:11 Request: method=screenshot, params=map[fullPage:false url:https://news.ycombinator.com]
-2025/07/01 18:58:11 Screenshot request: url=https://news.ycombinator.com
-2025/07/01 18:58:26 Request: method=extract, params=map[multiple:false selectors:map[description:p.f4 forks:a[href*='forks'] strong language:span[itemprop='programmingLanguage'] license:a[data-analytics-event*='license'] stars:a[href*='stargazers'] strong title:h1.heading-element] url:https://github.com/sst/opencode]
-2025/07/01 18:58:41 Request: method=automate, params=map[actions:[map[selector:input[name='q'] text:OpenCode AI terminal type:type] map[selector:button[type='submit'] type:click] map[timeout:2 type:wait] map[type:screenshot]] url:https://duckduckgo.com]
-2025/07/01 18:58:57 Request: method=crawl, params=map[includePatterns:[item\?id=] maxDepth:1 maxPages:3 respectRobots:true startUrl:https://news.ycombinator.com]
-2025/07/01 18:59:11 Request: method=scrape_pro, params=map[format:markdown includeScreenshot:false profileId:cloudflare-test solveCaptchas:false url:https://www.cloudflare.com]
-2025/07/01 18:59:32 Request: method=automate_pro, params=map[actions:[map[selector:input[name='custname'] text:OpenCode Tester type:type] map[selector:input[name='custtel'] text:555-1234 type:type] map[selector:input[name='custemail'] text:test@opencode.ai type:type] map[selector:textarea[name='comments'] text:Testing OpenBrowser Pro automation with complex form submission! type:type] map[selector:input[value='small'] type:click] map[selector:input[value='bacon'] type:click] map[selector:button[type='submit'] type:click]] profileId:form-test solveCaptchas:false url:https://httpbin.org/forms/post]
-2025/07/01 19:26:25 Request: method=scrape, params=map[format:html includeScreenshot:true url:https://vercel.com]
-2025/07/01 19:26:30 Request: method=scrape_pro, params=map[format:html includeScreenshot:true profileId:default solveCaptchas:false url:https://vercel.com]
-2025/07/01 19:27:09 Request: method=scrape, params=map[format:html includeScreenshot:false url:https://vercel.com]
-2025/07/01 19:27:26 Request: method=scrape, params=map[format:html includeScreenshot:true url:https://vercel.com]
-2025/07/01 19:28:00 Request: method=scrape, params=map[format:html includeScreenshot:false url:https://vercel.com]
-2025/07/01 19:37:09 Request: method=scrape, params=map[format:html includeScreenshot:true url:https://www.youtube.com]
-2025/07/01 19:37:14 Request: method=scrape_pro, params=map[format:html includeScreenshot:true profileId:default solveCaptchas:false url:https://www.youtube.com]
-2025/07/01 19:37:20 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://www.youtube.com]
-2025/07/01 19:44:35 Request: method=test, params=map[]
-2025/07/01 19:44:35 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://example.com]
-2025/07/01 19:46:20 Browser server listening on port 9876
-2025/07/01 19:46:23 Request: method=test, params=map[]
-2025/07/01 19:46:23 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://example.com]
-2025/07/01 19:53:04 Request: method=test, params=map[]
-2025/07/01 19:53:04 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://example.com]
-2025/07/01 20:13:29 Request: method=test, params=map[]
-2025/07/01 20:13:29 Request: method=scrape, params=map[format:html includeScreenshot:true url:https://zed.dev/]
-2025/07/01 21:01:30 Request: method=test, params=map[]
-2025/07/01 21:01:30 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://example.com]
-2025/07/01 21:02:37 Request: method=test, params=map[]
-2025/07/01 21:02:37 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://example.com]
-2025/07/01 21:04:12 Request: method=test, params=map[]
-2025/07/01 21:04:12 Request: method=scrape, params=map[format:markdown includeScreenshot:false summaryOnly:false url:https://example.com]
-2025/07/01 21:14:42 Request: method=test, params=map[]
-2025/07/01 21:14:42 Request: method=scrape, params=map[format:markdown includeScreenshot:false summaryOnly:false url:https://zed.dev]
+2025/07/02 15:28:30 Browser server listening on port 9876
+2025/07/02 15:31:46 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo]
+2025/07/02 15:31:46 Getting CAPTCHA for URL: https://2captcha.com/demo, profile: default
+2025/07/02 15:34:18 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo]
+2025/07/02 15:34:18 Getting CAPTCHA for URL: https://2captcha.com/demo, profile: default
+2025/07/02 15:40:30 Request: method=scrape_pro, params=map[format:markdown includeScreenshot:false profileId:default solveCaptchas:false url:https://2captcha.com/demo]
+2025/07/02 15:40:35 Request: method=test, params=map[]
+2025/07/02 15:40:35 Request: method=scrape, params=map[format:markdown includeScreenshot:true url:https://2captcha.com/demo]
+2025/07/02 15:40:38 Request: method=test, params=map[]
+2025/07/02 15:40:38 Request: method=scrape, params=map[format:markdown includeScreenshot:true url:https://2captcha.com/demo]
+2025/07/02 15:40:42 Request: method=test, params=map[]
+2025/07/02 15:40:42 Request: method=scrape, params=map[format:markdown includeScreenshot:true url:https://2captcha.com/demo]
+2025/07/02 15:40:48 Request: method=test, params=map[]
+2025/07/02 15:40:48 Request: method=screenshot, params=map[fullPage:true url:https://2captcha.com/demo]
+2025/07/02 15:40:48 Screenshot request: url=https://2captcha.com/demo
+2025/07/02 15:41:07 Request: method=automate_pro, params=map[actions:[map[type:screenshot] map[selector:button type:click] map[type:screenshot]] profileId:default solveCaptchas:false url:https://2captcha.com/demo]
+2025/07/02 15:42:22 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo]
+2025/07/02 15:42:22 Getting CAPTCHA for URL: https://2captcha.com/demo, profile: default
+2025/07/02 15:42:31 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.8 instructions:Click the 'I'm not a robot' checkbox to complete the reCAPTCHA v2 challenge solution:click_checkbox type:recaptcha_v2] url:https://2captcha.com/demo]
+2025/07/02 15:42:31 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo, solution: map[confidence:0.8 instructions:Click the 'I'm not a robot' checkbox to complete the reCAPTCHA v2 challenge solution:click_checkbox type:recaptcha_v2]
+2025/07/02 15:42:31 Applying reCAPTCHA v2 solution
+2025/07/02 15:42:43 Request: method=scrape_pro, params=map[format:markdown includeScreenshot:false profileId:default solveCaptchas:false url:https://2captcha.com/demo]
+2025/07/02 15:42:50 Request: method=test, params=map[]
+2025/07/02 15:42:50 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://2captcha.com/demo]
+2025/07/02 15:42:52 Request: method=test, params=map[]
+2025/07/02 15:42:52 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://2captcha.com/demo]
+2025/07/02 15:42:55 Request: method=test, params=map[]
+2025/07/02 15:42:55 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://2captcha.com/demo]
+2025/07/02 15:43:01 Request: method=get_captcha, params=map[profileId:default url:https://www.google.com/recaptcha/api2/demo]
+2025/07/02 15:43:01 Getting CAPTCHA for URL: https://www.google.com/recaptcha/api2/demo, profile: default
+2025/07/02 15:43:07 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.9 instructions:Click the 'I'm not a robot' checkbox to complete the reCAPTCHA v2 challenge on Google's demo page solution:click_checkbox type:recaptcha_v2] url:https://www.google.com/recaptcha/api2/demo]
+2025/07/02 15:43:07 Applying CAPTCHA solution for profile: default, URL: https://www.google.com/recaptcha/api2/demo, solution: map[confidence:0.9 instructions:Click the 'I'm not a robot' checkbox to complete the reCAPTCHA v2 challenge on Google's demo page solution:click_checkbox type:recaptcha_v2]
+2025/07/02 15:43:07 Applying reCAPTCHA v2 solution
+2025/07/02 15:43:12 Request: method=automate_pro, params=map[actions:[map[type:screenshot] map[selector:#recaptcha-demo-submit type:click] map[type:screenshot]] profileId:default solveCaptchas:false url:https://www.google.com/recaptcha/api2/demo]
+2025/07/02 15:43:16 Request: method=test, params=map[]
+2025/07/02 15:43:16 Request: method=screenshot, params=map[fullPage:true url:https://www.google.com/recaptcha/api2/demo]
+2025/07/02 15:43:16 Screenshot request: url=https://www.google.com/recaptcha/api2/demo
+2025/07/02 16:00:50 Request: method=test, params=map[]
+2025/07/02 16:00:50 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://platform.openai.com/docs/models]
+2025/07/02 16:01:05 Request: method=test, params=map[]
+2025/07/02 16:01:05 Request: method=extract, params=map[multiple:true selectors:map[claude_opus_4:td:contains('claude-opus-4') claude_sonnet_4:td:contains('claude-sonnet-4') model_names:code:contains('claude') pricing_table:table] url:https://docs.anthropic.com/en/docs/about-claude/models]
+2025/07/02 16:01:31 Request: method=test, params=map[]
+2025/07/02 16:01:31 Request: method=crawl, params=map[maxDepth:2 maxPages:3 respectRobots:true startUrl:https://cursor.sh]
+2025/07/02 16:01:46 Request: method=scrape_pro, params=map[format:markdown includeScreenshot:false profileId:default solveCaptchas:false url:https://cursor.sh/pricing]
+2025/07/02 16:05:21 Request: method=test, params=map[]
+2025/07/02 16:05:21 Request: method=screenshot, params=map[fullPage:true url:https://opencode.ai]
+2025/07/02 16:05:21 Screenshot request: url=https://opencode.ai
+2025/07/02 16:05:26 Request: method=test, params=map[]
+2025/07/02 16:05:26 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://opencode.ai]
+2025/07/02 16:05:50 Request: method=test, params=map[]
+2025/07/02 16:05:50 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://www.google.com/recaptcha/api2/demo]
+2025/07/02 16:05:51 Request: method=test, params=map[]
+2025/07/02 16:05:51 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://www.google.com/recaptcha/api2/demo]
+2025/07/02 16:05:54 Request: method=test, params=map[]
+2025/07/02 16:05:54 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://www.google.com/recaptcha/api2/demo]
+2025/07/02 16:05:58 Request: method=test, params=map[]
+2025/07/02 16:05:58 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://httpbin.org/forms/post]
+2025/07/02 16:06:04 Request: method=test, params=map[]
+2025/07/02 16:06:04 Request: method=extract, params=map[multiple:true selectors:map[form_action:form form_fields:input submit_button:input[type='submit'] text_areas:textarea] url:https://httpbin.org/forms/post]
+2025/07/02 16:06:11 Request: method=automate_pro, params=map[actions:[map[selector:input[name='custname'] text:OpenCode Test User type:type] map[selector:input[name='custtel'] text:555-0123 type:type] map[selector:input[name='custemail'] text:test@opencode.ai type:type] map[selector:input[value='medium'] type:click] map[selector:input[value='bacon'] type:click] map[selector:textarea[name='comments'] text:Automated form filling test - please ignore this order type:type] map[type:screenshot]] profileId:default solveCaptchas:false url:https://httpbin.org/forms/post]
+2025/07/02 16:06:28 Request: method=test, params=map[]
+2025/07/02 16:06:28 Request: method=crawl, params=map[maxDepth:1 maxPages:2 respectRobots:true startUrl:https://github.com/features/copilot]
+2025/07/02 17:17:31 Request: method=test, params=map[]
+2025/07/02 17:17:31 Request: method=screenshot, params=map[fullPage:true url:https://2captcha.com/demo]
+2025/07/02 17:17:31 Screenshot request: url=https://2captcha.com/demo
+2025/07/02 17:17:47 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo]
+2025/07/02 17:17:47 Getting CAPTCHA for URL: https://2captcha.com/demo, profile: default
+2025/07/02 17:17:58 Request: method=automate_pro, params=map[actions:[map[timeout:2000 type:wait] map[selector:button:contains('Normal') type:click] map[timeout:3000 type:wait] map[type:screenshot]] profileId:default solveCaptchas:false url:https://2captcha.com/demo]
+2025/07/02 17:19:03 Request: method=automate_pro, params=map[actions:[map[timeout:3000 type:wait] map[type:screenshot]] profileId:default solveCaptchas:false url:https://2captcha.com/demo/normal]
+2025/07/02 17:19:11 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/normal]
+2025/07/02 17:19:11 Getting CAPTCHA for URL: https://2captcha.com/demo/normal, profile: default
+2025/07/02 17:19:20 Request: method=test, params=map[]
+2025/07/02 17:19:20 Request: method=screenshot, params=map[fullPage:true url:https://2captcha.com/demo/normal]
+2025/07/02 17:19:20 Screenshot request: url=https://2captcha.com/demo/normal
+2025/07/02 17:21:45 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/normal]
+2025/07/02 17:21:45 Getting CAPTCHA for URL: https://2captcha.com/demo/normal, profile: default
+2025/07/02 17:22:04 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.85 instructions:Type the text 'GDXNP' into the CAPTCHA input field solution:GDXNP type:text] url:https://2captcha.com/demo/normal]
+2025/07/02 17:22:04 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/normal, solution: map[confidence:0.85 instructions:Type the text 'GDXNP' into the CAPTCHA input field solution:GDXNP type:text]
+2025/07/02 17:22:04 Applying text solution: GDXNP
+2025/07/02 17:22:21 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/recaptcha-v2]
+2025/07/02 17:22:21 Getting CAPTCHA for URL: https://2captcha.com/demo/recaptcha-v2, profile: default
+2025/07/02 17:22:30 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.95 instructions:Click the 'I'm not a robot' checkbox to complete the reCAPTCHA v2 verification solution:click_checkbox type:recaptcha_v2] url:https://2captcha.com/demo/recaptcha-v2]
+2025/07/02 17:22:30 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/recaptcha-v2, solution: map[confidence:0.95 instructions:Click the 'I'm not a robot' checkbox to complete the reCAPTCHA v2 verification solution:click_checkbox type:recaptcha_v2]
+2025/07/02 17:22:30 Applying reCAPTCHA v2 solution
+2025/07/02 17:22:45 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/grid]
+2025/07/02 17:22:45 Getting CAPTCHA for URL: https://2captcha.com/demo/grid, profile: default
+2025/07/02 17:23:02 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.8 coordinates:[[150 200] [350 200] [250 350]] instructions:Click on the grid squares that contain traffic lights solution:Select all images with traffic lights type:image_selection] url:https://2captcha.com/demo/grid]
+2025/07/02 17:23:02 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/grid, solution: map[confidence:0.8 coordinates:[[150 200] [350 200] [250 350]] instructions:Click on the grid squares that contain traffic lights solution:Select all images with traffic lights type:image_selection]
+2025/07/02 17:23:02 Applying image selection solution
+2025/07/02 17:23:06 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/hcaptcha]
+2025/07/02 17:23:06 Getting CAPTCHA for URL: https://2captcha.com/demo/hcaptcha, profile: default
+2025/07/02 17:23:29 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.85 coordinates:[[120 180] [280 180] [440 180] [120 320]] instructions:Click on all images that contain cars in the hCaptcha grid solution:Select all images with cars type:hcaptcha] url:https://2captcha.com/demo/hcaptcha]
+2025/07/02 17:23:29 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/hcaptcha, solution: map[confidence:0.85 coordinates:[[120 180] [280 180] [440 180] [120 320]] instructions:Click on all images that contain cars in the hCaptcha grid solution:Select all images with cars type:hcaptcha]
+2025/07/02 17:23:37 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/hcaptcha]
+2025/07/02 17:23:37 Getting CAPTCHA for URL: https://2captcha.com/demo/hcaptcha, profile: default
+2025/07/02 17:23:56 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.9 instructions:Click the hCaptcha checkbox to initiate verification solution:click_checkbox type:hcaptcha] url:https://2captcha.com/demo/hcaptcha]
+2025/07/02 17:23:56 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/hcaptcha, solution: map[confidence:0.9 instructions:Click the hCaptcha checkbox to initiate verification solution:click_checkbox type:hcaptcha]
+2025/07/02 17:24:54 Request: method=automate_pro, params=map[actions:[map[type:screenshot] map[timeout:2000 type:wait]] profileId:default solveCaptchas:false url:https://2captcha.com/demo/normal]
+2025/07/02 17:25:01 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/normal]
+2025/07/02 17:25:01 Getting CAPTCHA for URL: https://2captcha.com/demo/normal, profile: default
+2025/07/02 17:25:11 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.88 instructions:Type the text 'XBWKM' into the CAPTCHA input field solution:XBWKM type:text] url:https://2captcha.com/demo/normal]
+2025/07/02 17:25:11 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/normal, solution: map[confidence:0.88 instructions:Type the text 'XBWKM' into the CAPTCHA input field solution:XBWKM type:text]
+2025/07/02 17:25:11 Applying text solution: XBWKM
+2025/07/02 17:25:15 Request: method=automate_pro, params=map[actions:[map[type:screenshot] map[timeout:1000 type:wait]] profileId:default solveCaptchas:false url:https://2captcha.com/demo/normal]
+2025/07/02 17:51:06 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/normal]
+2025/07/02 17:51:06 Getting CAPTCHA for URL: https://2captcha.com/demo/normal, profile: default
+2025/07/02 17:51:15 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.82 instructions:Type the text 'MWXPD' into the CAPTCHA input field solution:MWXPD type:text] url:https://2captcha.com/demo/normal]
+2025/07/02 17:51:15 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/normal, solution: map[confidence:0.82 instructions:Type the text 'MWXPD' into the CAPTCHA input field solution:MWXPD type:text]
+2025/07/02 17:51:15 Applying text solution: MWXPD
+2025/07/02 17:52:51 Request: method=test, params=map[]
+2025/07/02 17:52:51 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://2captcha.com/demo]
+2025/07/02 17:52:54 Request: method=test, params=map[]
+2025/07/02 17:52:54 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://2captcha.com/demo]
+2025/07/02 17:52:57 Request: method=test, params=map[]
+2025/07/02 17:52:57 Request: method=scrape, params=map[format:markdown includeScreenshot:false url:https://2captcha.com/demo]
+2025/07/02 17:53:04 Request: method=test, params=map[]
+2025/07/02 17:53:04 Request: method=extract, params=map[multiple:true selectors:map[captcha_types:a[href*='/demo/'] demo_links:a page_title:h1, h2, h3] url:https://2captcha.com/demo]
+2025/07/02 17:53:07 Request: method=test, params=map[]
+2025/07/02 17:53:07 Request: method=extract, params=map[multiple:true selectors:map[captcha_types:a[href*='/demo/'] demo_links:a page_title:h1, h2, h3] url:https://2captcha.com/demo]
+2025/07/02 17:53:10 Request: method=test, params=map[]
+2025/07/02 17:53:10 Request: method=extract, params=map[multiple:true selectors:map[captcha_types:a[href*='/demo/'] demo_links:a page_title:h1, h2, h3] url:https://2captcha.com/demo]
+2025/07/02 17:53:15 Request: method=test, params=map[]
+2025/07/02 17:53:15 Request: method=screenshot, params=map[fullPage:true url:https://2captcha.com/demo]
+2025/07/02 17:53:15 Screenshot request: url=https://2captcha.com/demo
+2025/07/02 17:53:42 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/recaptcha-v2]
+2025/07/02 17:53:42 Getting CAPTCHA for URL: https://2captcha.com/demo/recaptcha-v2, profile: default
+2025/07/02 17:53:52 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.95 instructions:Click the 'I'm not a robot' checkbox to complete the reCAPTCHA v2 verification solution:click_checkbox type:recaptcha_v2] url:https://2captcha.com/demo/recaptcha-v2]
+2025/07/02 17:53:52 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/recaptcha-v2, solution: map[confidence:0.95 instructions:Click the 'I'm not a robot' checkbox to complete the reCAPTCHA v2 verification solution:click_checkbox type:recaptcha_v2]
+2025/07/02 17:53:52 Applying reCAPTCHA v2 solution
+2025/07/02 17:57:47 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/grid]
+2025/07/02 17:57:47 Getting CAPTCHA for URL: https://2captcha.com/demo/grid, profile: default
+2025/07/02 17:57:59 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.78 coordinates:[[150 200] [350 200] [250 350]] instructions:Click on the grid squares that contain traffic lights solution:Select all images with traffic lights type:image_selection] url:https://2captcha.com/demo/grid]
+2025/07/02 17:57:59 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/grid, solution: map[confidence:0.78 coordinates:[[150 200] [350 200] [250 350]] instructions:Click on the grid squares that contain traffic lights solution:Select all images with traffic lights type:image_selection]
+2025/07/02 17:57:59 Applying image selection solution
+2025/07/02 17:59:26 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/hcaptcha]
+2025/07/02 17:59:26 Getting CAPTCHA for URL: https://2captcha.com/demo/hcaptcha, profile: default
+2025/07/02 17:59:41 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.85 instructions:Click the hCaptcha checkbox to initiate verification solution:click_checkbox type:hcaptcha] url:https://2captcha.com/demo/hcaptcha]
+2025/07/02 17:59:41 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/hcaptcha, solution: map[confidence:0.85 instructions:Click the hCaptcha checkbox to initiate verification solution:click_checkbox type:hcaptcha]
+2025/07/02 17:59:45 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/hcaptcha]
+2025/07/02 17:59:45 Getting CAPTCHA for URL: https://2captcha.com/demo/hcaptcha, profile: default
+2025/07/02 17:59:55 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.75 coordinates:[[200 180] [400 180] [200 320]] instructions:Click on all images that contain cars in the hCaptcha grid solution:Select all images with cars type:image_selection] url:https://2captcha.com/demo/hcaptcha]
+2025/07/02 17:59:55 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/hcaptcha, solution: map[confidence:0.75 coordinates:[[200 180] [400 180] [200 320]] instructions:Click on all images that contain cars in the hCaptcha grid solution:Select all images with cars type:image_selection]
+2025/07/02 17:59:55 Applying image selection solution
+2025/07/02 18:06:37 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/coordinates]
+2025/07/02 18:06:37 Getting CAPTCHA for URL: https://2captcha.com/demo/coordinates, profile: default
+2025/07/02 18:06:48 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.8 coordinates:[[320 180] [450 240] [280 320]] instructions:Click on the specified coordinate points in the image solution:Click on specific coordinates as instructed type:image_selection] url:https://2captcha.com/demo/coordinates]
+2025/07/02 18:06:48 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/coordinates, solution: map[confidence:0.8 coordinates:[[320 180] [450 240] [280 320]] instructions:Click on the specified coordinate points in the image solution:Click on specific coordinates as instructed type:image_selection]
+2025/07/02 18:06:48 Applying image selection solution
+2025/07/02 18:09:19 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/audio]
+2025/07/02 18:09:19 Getting CAPTCHA for URL: https://2captcha.com/demo/audio, profile: default
+2025/07/02 18:09:32 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.6 instructions:Type the text heard in the audio CAPTCHA solution:AUDIO type:text] url:https://2captcha.com/demo/audio]
+2025/07/02 18:09:32 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/audio, solution: map[confidence:0.6 instructions:Type the text heard in the audio CAPTCHA solution:AUDIO type:text]
+2025/07/02 18:09:32 Applying text solution: AUDIO
+2025/07/02 18:13:14 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/slider]
+2025/07/02 18:13:14 Getting CAPTCHA for URL: https://2captcha.com/demo/slider, profile: default
+2025/07/02 18:13:24 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.75 coordinates:[[100 200] [400 200]] instructions:Drag the slider from start position to end position to complete the puzzle solution:Drag slider to complete puzzle type:puzzle] url:https://2captcha.com/demo/slider]
+2025/07/02 18:13:24 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/slider, solution: map[confidence:0.75 coordinates:[[100 200] [400 200]] instructions:Drag the slider from start position to end position to complete the puzzle solution:Drag slider to complete puzzle type:puzzle]
+2025/07/02 18:13:29 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.7 coordinates:[[300 200]] instructions:Click and drag slider to complete the challenge solution:Complete slider puzzle type:image_selection] url:https://2captcha.com/demo/slider]
+2025/07/02 18:13:29 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/slider, solution: map[confidence:0.7 coordinates:[[300 200]] instructions:Click and drag slider to complete the challenge solution:Complete slider puzzle type:image_selection]
+2025/07/02 18:13:29 Applying image selection solution
+2025/07/02 18:16:17 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/rotate]
+2025/07/02 18:16:17 Getting CAPTCHA for URL: https://2captcha.com/demo/rotate, profile: default
+2025/07/02 18:16:28 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.72 coordinates:[[300 250]] instructions:Click and rotate the image to the correct upright position solution:Rotate image to correct orientation type:puzzle] url:https://2captcha.com/demo/rotate]
+2025/07/02 18:16:28 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/rotate, solution: map[confidence:0.72 coordinates:[[300 250]] instructions:Click and rotate the image to the correct upright position solution:Rotate image to correct orientation type:puzzle]
+2025/07/02 18:16:32 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.7 coordinates:[[300 250]] instructions:Click to rotate the image to the correct orientation solution:Rotate image to correct position type:image_selection] url:https://2captcha.com/demo/rotate]
+2025/07/02 18:16:32 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/rotate, solution: map[confidence:0.7 coordinates:[[300 250]] instructions:Click to rotate the image to the correct orientation solution:Rotate image to correct position type:image_selection]
+2025/07/02 18:16:32 Applying image selection solution
+2025/07/02 18:17:50 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/recaptcha-v3]
+2025/07/02 18:17:50 Getting CAPTCHA for URL: https://2captcha.com/demo/recaptcha-v3, profile: default
+2025/07/02 18:18:00 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.9 instructions:reCAPTCHA v3 runs automatically in the background without user interaction solution:automatic type:recaptcha_v3] url:https://2captcha.com/demo/recaptcha-v3]
+2025/07/02 18:18:00 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/recaptcha-v3, solution: map[confidence:0.9 instructions:reCAPTCHA v3 runs automatically in the background without user interaction solution:automatic type:recaptcha_v3]
+2025/07/02 18:18:06 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.8 coordinates:[[400 300]] instructions:Click to trigger reCAPTCHA v3 automatic verification solution:Trigger reCAPTCHA v3 verification type:image_selection] url:https://2captcha.com/demo/recaptcha-v3]
+2025/07/02 18:18:06 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/recaptcha-v3, solution: map[confidence:0.8 coordinates:[[400 300]] instructions:Click to trigger reCAPTCHA v3 automatic verification solution:Trigger reCAPTCHA v3 verification type:image_selection]
+2025/07/02 18:18:06 Applying image selection solution
+2025/07/02 18:19:42 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/keycaptcha]
+2025/07/02 18:19:42 Getting CAPTCHA for URL: https://2captcha.com/demo/keycaptcha, profile: default
+2025/07/02 18:19:56 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.73 coordinates:[[350 250]] instructions:Complete the KeyCAPTCHA puzzle challenge solution:Complete KeyCAPTCHA puzzle sequence type:puzzle] url:https://2captcha.com/demo/keycaptcha]
+2025/07/02 18:19:56 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/keycaptcha, solution: map[confidence:0.73 coordinates:[[350 250]] instructions:Complete the KeyCAPTCHA puzzle challenge solution:Complete KeyCAPTCHA puzzle sequence type:puzzle]
+2025/07/02 18:20:01 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.7 coordinates:[[350 250]] instructions:Click to complete the KeyCAPTCHA puzzle solution:Complete KeyCAPTCHA challenge type:image_selection] url:https://2captcha.com/demo/keycaptcha]
+2025/07/02 18:20:01 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/keycaptcha, solution: map[confidence:0.7 coordinates:[[350 250]] instructions:Click to complete the KeyCAPTCHA puzzle solution:Complete KeyCAPTCHA challenge type:image_selection]
+2025/07/02 18:20:01 Applying image selection solution
+2025/07/02 18:21:51 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/geetest]
+2025/07/02 18:21:51 Getting CAPTCHA for URL: https://2captcha.com/demo/geetest, profile: default
+2025/07/02 18:22:04 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.74 coordinates:[[400 280]] instructions:Complete the GeeTest interactive puzzle with behavioral verification solution:Complete GeeTest behavioral challenge type:puzzle] url:https://2captcha.com/demo/geetest]
+2025/07/02 18:22:04 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/geetest, solution: map[confidence:0.74 coordinates:[[400 280]] instructions:Complete the GeeTest interactive puzzle with behavioral verification solution:Complete GeeTest behavioral challenge type:puzzle]
+2025/07/02 18:22:10 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.72 coordinates:[[400 280]] instructions:Click to complete the GeeTest behavioral verification solution:Complete GeeTest challenge type:image_selection] url:https://2captcha.com/demo/geetest]
+2025/07/02 18:22:10 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/geetest, solution: map[confidence:0.72 coordinates:[[400 280]] instructions:Click to complete the GeeTest behavioral verification solution:Complete GeeTest challenge type:image_selection]
+2025/07/02 18:22:10 Applying image selection solution
+2025/07/02 18:25:08 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/capy]
+2025/07/02 18:25:08 Getting CAPTCHA for URL: https://2captcha.com/demo/capy, profile: default
+2025/07/02 18:25:18 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.73 coordinates:[[350 270]] instructions:Complete the Capy puzzle CAPTCHA challenge solution:Complete Capy puzzle challenge type:puzzle] url:https://2captcha.com/demo/capy]
+2025/07/02 18:25:18 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/capy, solution: map[confidence:0.73 coordinates:[[350 270]] instructions:Complete the Capy puzzle CAPTCHA challenge solution:Complete Capy puzzle challenge type:puzzle]
+2025/07/02 18:25:23 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.71 coordinates:[[350 270]] instructions:Click to complete the Capy puzzle CAPTCHA solution:Complete Capy challenge type:image_selection] url:https://2captcha.com/demo/capy]
+2025/07/02 18:25:23 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/capy, solution: map[confidence:0.71 coordinates:[[350 270]] instructions:Click to complete the Capy puzzle CAPTCHA solution:Complete Capy challenge type:image_selection]
+2025/07/02 18:25:23 Applying image selection solution
+2025/07/02 18:26:39 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/datadome]
+2025/07/02 18:26:39 Getting CAPTCHA for URL: https://2captcha.com/demo/datadome, profile: default
+2025/07/02 18:26:49 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.75 coordinates:[[400 300]] instructions:Click to complete the DataDome bot detection verification solution:Complete DataDome bot detection challenge type:image_selection] url:https://2captcha.com/demo/datadome]
+2025/07/02 18:26:49 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/datadome, solution: map[confidence:0.75 coordinates:[[400 300]] instructions:Click to complete the DataDome bot detection verification solution:Complete DataDome bot detection challenge type:image_selection]
+2025/07/02 18:26:49 Applying image selection solution
+2025/07/02 18:27:55 Request: method=get_captcha, params=map[profileId:default url:https://2captcha.com/demo/mtcaptcha]
+2025/07/02 18:27:55 Getting CAPTCHA for URL: https://2captcha.com/demo/mtcaptcha, profile: default
+2025/07/02 18:28:07 Request: method=apply_captcha_solution, params=map[profileId:default solution:map[confidence:0.76 coordinates:[[380 290]] instructions:Click to complete the MTCaptcha machine learning verification solution:Complete MTCaptcha machine learning verification type:image_selection] url:https://2captcha.com/demo/mtcaptcha]
+2025/07/02 18:28:07 Applying CAPTCHA solution for profile: default, URL: https://2captcha.com/demo/mtcaptcha, solution: map[confidence:0.76 coordinates:[[380 290]] instructions:Click to complete the MTCaptcha machine learning verification solution:Complete MTCaptcha machine learning verification type:image_selection]
+2025/07/02 18:28:07 Applying image selection solution

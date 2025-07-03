@@ -110,6 +110,8 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		handleCleanup(w, req.Params)
 	case "cleanup_session":
 		handleCleanupSession(w, req.Params)
+	case "clear_all":
+		handleClearAll(w, req.Params)
 	default:
 		sendError(w, fmt.Sprintf("Unknown method: %s", req.Method))
 	}
@@ -309,6 +311,20 @@ func handleCleanupSession(w http.ResponseWriter, params map[string]interface{}) 
 	sendSuccess(w, map[string]interface{}{
 		"message": fmt.Sprintf("Deleted %d old items from session %s", deleted, sessionID),
 		"deleted": deleted,
+	})
+}
+
+func handleClearAll(w http.ResponseWriter, params map[string]interface{}) {
+	ctx := context.Background()
+
+	// Delete all content
+	if err := storageEngine.DeleteAllContent(ctx); err != nil {
+		sendError(w, err.Error())
+		return
+	}
+
+	sendSuccess(w, map[string]interface{}{
+		"message": "All storage content has been cleared",
 	})
 }
 

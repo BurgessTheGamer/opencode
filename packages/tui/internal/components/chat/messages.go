@@ -154,18 +154,23 @@ func (m *messagesComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.GotoBottom()
 		}
 	case opencode.EventListResponseEventSessionUpdated, opencode.EventListResponseEventMessageUpdated:
-		// Skip rendering if we're already rendering to prevent flooding
-		if !m.rendering {
-			m.rendering = true
+		// Use debouncing to prevent excessive re-renders
+		if m.updateTimer != nil {
+			m.updateTimer.Stop()
+		}
+
+		m.pendingUpdate = true
+		m.updateTimer = time.AfterFunc(time.Millisecond*100, func() {
+			// This will trigger a re-render after the delay
+			m.pendingUpdate = false
 			m.renderView()
 			if m.tail {
 				m.viewport.GotoBottom()
 			}
-			// Reset rendering flag after a short delay
-			return m, tea.Tick(time.Millisecond*50, func(time.Time) tea.Msg {
-				return renderFinishedMsg{}
-			})
-		}
+		})
+
+		// Don't trigger immediate re-render to prevent flickering
+		return m, nil
 	}
 
 	viewport, cmd := m.viewport.Update(msg)

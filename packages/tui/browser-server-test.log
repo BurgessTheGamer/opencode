@@ -1,0 +1,2 @@
+2025/07/02 09:38:16 Browser server listening on port 9876
+2025/07/02 09:38:31 Request: method=scrape, params=map[format:html includeScreenshot:true url:https://zed.dev/ waitFor:body]
