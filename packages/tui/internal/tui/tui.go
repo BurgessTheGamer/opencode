@@ -146,14 +146,9 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch keyString {
 			// Escape always closes current modal
 			case "esc", "ctrl+c":
-
 				cmd := a.modal.Close()
 				a.modal = nil
 				return a, cmd
-			case "ctrl+c":
-				// give the modal a chance to handle the ctrl+c
-				updatedModal, cmd := a.modal.Update(msg)
-				a.modal = updatedModal.(layout.Modal)
 				if cmd != nil {
 					return a, cmd
 				}
@@ -307,101 +302,18 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			a.fileViewer, cmd = a.fileViewer.Update(msg)
 			cmds = append(cmds, cmd)
 		} else {
-			// Check if mouse event is within editor bounds
-			editorX, editorY := a.editorContainer.GetPosition()
-			editorWidth, editorHeight := a.editorContainer.GetSize()
+			// Route mouse events to both editor and messages
+			// Let each component decide if they should handle it based on coordinates
+			updated, cmd := a.messages.Update(msg)
+			a.messages = updated.(chat.MessagesComponent)
+			cmds = append(cmds, cmd)
 
-			// If editor container has no size, it hasn't been laid out yet
-			if editorWidth == 0 || editorHeight == 0 {
-				// Just route to messages for now
-				updated, cmd := a.messages.Update(msg)
-				a.messages = updated.(chat.MessagesComponent)
-				cmds = append(cmds, cmd)
-				return a, tea.Batch(cmds...)
-			}
-
-			// For multi-line editor, adjust position
-			if a.editor.Lines() > 1 {
-				editorY = editorY - a.editor.Lines() + 1
-				editorHeight = a.editor.Lines()
-			}
-
-			mouseX, mouseY := 0, 0
-			switch evt := msg.(type) {
-			case tea.MouseClickMsg:
-				mouseX, mouseY = evt.X, evt.Y
-				slog.Debug("Mouse click bounds check",
-					"mouseX", mouseX, "mouseY", mouseY,
-					"editorX", editorX, "editorY", editorY,
-					"editorWidth", editorWidth, "editorHeight", editorHeight,
-					"editorLines", a.editor.Lines())
-			case tea.MouseMotionMsg:
-				mouseX, mouseY = evt.X, evt.Y
-			case tea.MouseReleaseMsg:
-				mouseX, mouseY = evt.X, evt.Y
-			case tea.MouseWheelMsg:
-				mouseX, mouseY = evt.X, evt.Y
-			}
-
-			// Route to editor if within bounds (or if it's a release event, always route to active component)
-			inBounds := mouseX >= editorX && mouseX < editorX+editorWidth &&
-				mouseY >= editorY && mouseY <= editorY+editorHeight
-
-			// Always route mouse release to both components to ensure state cleanup
-			if _, isRelease := msg.(tea.MouseReleaseMsg); isRelease {
-				updated, cmd := a.editor.Update(msg)
-				a.editor = updated.(chat.EditorComponent)
-				cmds = append(cmds, cmd)
-
-				updated, cmd = a.messages.Update(msg)
-				a.messages = updated.(chat.MessagesComponent)
-				cmds = append(cmds, cmd)
-				return a, tea.Batch(cmds...)
-			}
-			if _, ok := msg.(tea.MouseClickMsg); ok {
-				slog.Debug("Mouse routing decision", "inBounds", inBounds)
-			}
-
-			if inBounds {
-				// Translate coordinates to editor-relative
-				switch evt := msg.(type) {
-				case tea.MouseClickMsg:
-					evt.X -= editorX
-					evt.Y -= editorY
-					updated, cmd := a.editor.Update(evt)
-					a.editor = updated.(chat.EditorComponent)
-					cmds = append(cmds, cmd)
-				case tea.MouseMotionMsg:
-					evt.X -= editorX
-					evt.Y -= editorY
-					updated, cmd := a.editor.Update(evt)
-					a.editor = updated.(chat.EditorComponent)
-					cmds = append(cmds, cmd)
-				case tea.MouseWheelMsg:
-					// For mouse wheel, just pass it through without coordinate translation
-					// The Y field contains the scroll direction, not position
-					updated, cmd := a.editor.Update(evt)
-					a.editor = updated.(chat.EditorComponent)
-					cmds = append(cmds, cmd)
-				}
-			} else {
-				// Route to messages
-				updated, cmd := a.messages.Update(msg)
-				a.messages = updated.(chat.MessagesComponent)
-				cmds = append(cmds, cmd)
-			}
+			updated, cmd = a.editor.Update(msg)
+			a.editor = updated.(chat.EditorComponent)
+			cmds = append(cmds, cmd)
 		}
 		return a, tea.Batch(cmds...)
-	case tea.MouseMotionMsg:
-		a.lastMouse = msg.Mouse()
-		a.fileViewerHit = a.fileViewer.HasFile() &&
-			a.lastMouse.X > a.fileViewerStart &&
-			a.lastMouse.X < a.fileViewerEnd
-	case tea.MouseClickMsg:
-		a.lastMouse = msg.Mouse()
-		a.fileViewerHit = a.fileViewer.HasFile() &&
-			a.lastMouse.X > a.fileViewerStart &&
-			a.lastMouse.X < a.fileViewerEnd
+
 	case tea.BackgroundColorMsg:
 		styles.Terminal = &styles.TerminalInfo{
 			Background:       msg.Color,
