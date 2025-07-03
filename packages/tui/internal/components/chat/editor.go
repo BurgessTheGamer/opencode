@@ -13,6 +13,7 @@ import (
 	"github.com/sst/opencode/internal/components/dialog"
 	"github.com/sst/opencode/internal/components/textarea"
 	"github.com/sst/opencode/internal/image"
+	"github.com/sst/opencode/internal/layout"
 	"github.com/sst/opencode/internal/styles"
 	"github.com/sst/opencode/internal/theme"
 	"github.com/sst/opencode/internal/util"
@@ -34,12 +35,33 @@ type EditorComponent interface {
 	SetInterruptKeyInDebounce(inDebounce bool)
 }
 
+type ScrollbarState struct {
+	// Visual state
+	visible bool
+	x, y    int // Position in editor coordinates
+	width   int // Hit zone width (3 chars for tolerance)
+	height  int // Total scrollbar height
+
+	// Thumb state
+	thumbY      int // Current thumb position
+	thumbHeight int // Thumb size
+
+	// Drag state
+	dragging          bool
+	dragStartY        int // Mouse Y when drag started
+	dragStartThumb    int // Thumb position when drag started
+	dragStartScroll   int // Scroll offset when drag started
+	dragOffsetInThumb int // Where in the thumb we clicked
+}
+
 type editorComponent struct {
 	app                    *app.App
+	width, height          int
 	textarea               textarea.Model
 	attachments            []app.Attachment
 	spinner                spinner.Model
 	interruptKeyInDebounce bool
+	scrollbar              ScrollbarState
 }
 
 func (m *editorComponent) Init() tea.Cmd {
@@ -54,6 +76,69 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
+	case tea.MouseClickMsg, tea.MouseMotionMsg, tea.MouseReleaseMsg, tea.MouseWheelMsg:
+		switch evt := msg.(type) {
+		case tea.MouseClickMsg:
+			// Always update scrollbar state before checking clicks
+			m.updateScrollbarState()
+
+			// Check if click is on scrollbar
+			if m.scrollbar.visible && m.isClickOnScrollbar(evt.X, evt.Y) {
+				slog.Debug("Scrollbar click detected",
+					"x", evt.X,
+					"y", evt.Y,
+					"scrollbarX", m.scrollbar.x,
+					"thumbY", m.scrollbar.thumbY,
+					"thumbHeight", m.scrollbar.thumbHeight)
+
+				// Handle scrollbar click
+				m.handleScrollbarClick(evt.Y)
+				return m, nil
+			}
+			// Not on scrollbar, pass to textarea
+			// The prompt is ">" with 1 char padding = 2 chars total
+			// Plus we have a left border = 3 chars total
+			evt.X -= 3 // prompt (">") + padding + left border
+			evt.Y -= 1 // Adjust for top padding
+
+			// Ensure coordinates are not negative
+			if evt.X < 0 {
+				evt.X = 0
+			}
+			if evt.Y < 0 {
+				evt.Y = 0
+			}
+
+			m.textarea, cmd = m.textarea.Update(evt)
+			return m, cmd
+
+		case tea.MouseMotionMsg:
+			// Handle scrollbar dragging
+			if m.scrollbar.dragging {
+				m.handleScrollbarDrag(evt.Y)
+				return m, nil
+			}
+			// Pass through to textarea if not dragging
+			m.textarea, cmd = m.textarea.Update(msg)
+			return m, cmd
+
+		case tea.MouseReleaseMsg:
+			// Stop dragging
+			if m.scrollbar.dragging {
+				m.scrollbar.dragging = false
+				m.textarea.SetScrollbarActive(false)
+				slog.Debug("Stopped dragging scrollbar")
+			}
+			// Always pass release to textarea
+			m.textarea, cmd = m.textarea.Update(msg)
+			return m, cmd
+
+		case tea.MouseWheelMsg:
+			// Pass wheel events to textarea
+			m.textarea, cmd = m.textarea.Update(msg)
+			return m, cmd
+		}
+
 	case tea.KeyPressMsg:
 		// Maximize editor responsiveness for printable characters
 		if msg.Text != "" {
@@ -98,6 +183,12 @@ func (m *editorComponent) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *editorComponent) Content(width int) string {
+	// Update size
+	m.width = width
+
+	// Update scrollbar state before rendering
+	m.updateScrollbarState()
+
 	t := theme.CurrentTheme()
 	base := styles.NewStyle().Foreground(t.Text()).Background(t.Background()).Render
 	muted := styles.NewStyle().Foreground(t.TextMuted()).Background(t.Background()).Render
@@ -106,13 +197,21 @@ func (m *editorComponent) Content(width int) string {
 		Bold(true)
 	prompt := promptStyle.Render(">")
 
-	m.textarea.SetWidth(width - 6)
-	textarea := lipgloss.JoinHorizontal(
+	// Adjust textarea width for prompt and borders
+	borderAdjust := 6 // 3 for prompt, 2 for borders, 1 for padding
+	m.textarea.SetWidth(width - borderAdjust)
+
+	textareaView := m.textarea.View()
+
+	// Create the content with prompt
+	content := lipgloss.JoinHorizontal(
 		lipgloss.Top,
 		prompt,
-		m.textarea.View(),
+		textareaView,
 	)
-	textarea = styles.NewStyle().
+
+	// Always render without top/bottom borders for clean look
+	textarea := styles.NewStyle().
 		Background(t.BackgroundElement()).
 		Width(width).
 		PaddingTop(1).
@@ -122,7 +221,35 @@ func (m *editorComponent) Content(width int) string {
 		BorderBackground(t.Background()).
 		BorderLeft(true).
 		BorderRight(true).
-		Render(textarea)
+		BorderTop(false).
+		BorderBottom(false).
+		Render(content)
+
+	// Apply scrollbar overlay if needed
+	if m.hasScrollbar() {
+		scrollbar := m.renderScrollbar()
+		if scrollbar != "" {
+			// Apply scrollbar as overlay on the right edge, inside the border
+			lines := strings.Split(textarea, "\n")
+			scrollbarLines := strings.Split(scrollbar, "\n")
+
+			// Without top/bottom borders:
+			// Line 0: Padding (empty line)
+			// Lines 1 to n-1: Content lines
+			// Line n: Padding (empty line)
+
+			startLine := 1            // After top padding
+			endLine := len(lines) - 1 // Before bottom padding
+
+			for i := 0; i < len(scrollbarLines) && startLine+i < endLine; i++ {
+				lineIdx := startLine + i
+				// Apply scrollbar overlay at the right edge, just inside the border
+				lines[lineIdx] = layout.PlaceOverlay(width-2, 0, scrollbarLines[i], lines[lineIdx])
+			}
+
+			textarea = strings.Join(lines, "\n")
+		}
+	}
 
 	hint := base(m.getSubmitKeyText()) + muted(" send   ")
 	if m.app.IsBusy() {
@@ -145,8 +272,8 @@ func (m *editorComponent) Content(width int) string {
 	info := hint + spacer + model
 	info = styles.NewStyle().Background(t.Background()).Padding(0, 1).Render(info)
 
-	content := strings.Join([]string{"", textarea, info}, "\n")
-	return content
+	result := strings.Join([]string{"", textarea, info}, "\n")
+	return result
 }
 
 func (m *editorComponent) View(width int) string {
@@ -176,6 +303,15 @@ func (m *editorComponent) Blur() {
 }
 
 func (m *editorComponent) Lines() int {
+	// If MaxHeight is set, grow naturally up to MaxHeight, then stay fixed
+	if m.textarea.MaxHeight > 0 {
+		contentLines := m.textarea.LineCount()
+		if contentLines <= m.textarea.MaxHeight {
+			return contentLines
+		} else {
+			return m.textarea.MaxHeight
+		}
+	}
 	return m.textarea.LineCount()
 }
 
@@ -289,9 +425,173 @@ func createSpinner() spinner.Model {
 	)
 }
 
+// Scrollbar helper methods
+func (m *editorComponent) hasScrollbar() bool {
+	return m.textarea.MaxHeight > 0 && m.textarea.LineCount() > m.textarea.MaxHeight
+}
+
+func (m *editorComponent) updateScrollbarState() {
+	m.scrollbar.visible = m.hasScrollbar()
+	if !m.scrollbar.visible {
+		return
+	}
+
+	// Calculate scrollbar position and dimensions
+	// Scrollbar is at the right edge, inside the border
+	m.scrollbar.x = m.width - 2
+	m.scrollbar.y = 1     // After top padding
+	m.scrollbar.width = 3 // 3 chars wide for hit tolerance
+	// Height matches the visible content area (excluding bottom padding)
+	m.scrollbar.height = m.textarea.MaxHeight
+
+	// Calculate thumb size and position with better precision
+	totalLines := m.textarea.LineCount()
+	visibleLines := m.textarea.MaxHeight
+	scrollOffset := m.textarea.ScrollOffset()
+
+	// Calculate thumb height as a proportion of visible content
+	// Use floating point for smoother calculation
+	thumbRatio := float64(visibleLines) / float64(totalLines)
+	m.scrollbar.thumbHeight = max(1, int(float64(m.scrollbar.height)*thumbRatio+0.5))
+
+	// Calculate thumb position
+	if totalLines > visibleLines {
+		// Calculate position as a ratio of scroll progress
+		scrollRatio := float64(scrollOffset) / float64(totalLines-visibleLines)
+		maxThumbPos := m.scrollbar.height - m.scrollbar.thumbHeight
+		m.scrollbar.thumbY = int(float64(maxThumbPos)*scrollRatio + 0.5)
+		// Ensure thumb stays within bounds
+		m.scrollbar.thumbY = max(0, min(maxThumbPos, m.scrollbar.thumbY))
+	} else {
+		m.scrollbar.thumbY = 0
+	}
+}
+
+func (m *editorComponent) isClickOnScrollbar(x, y int) bool {
+	// Check if click is within scrollbar hit zone
+	// Accept clicks from scrollbar position to the right edge (including border)
+	if x < m.scrollbar.x || x > m.scrollbar.x+1 {
+		return false
+	}
+
+	// Check if click is within scrollbar height
+	if y < m.scrollbar.y || y > m.scrollbar.y+m.scrollbar.height-1 {
+		return false
+	}
+
+	return true
+}
+
+func (m *editorComponent) handleScrollbarClick(y int) {
+	// Calculate click position relative to scrollbar
+	clickY := y - m.scrollbar.y
+	// Ensure click is within valid range (with slight tolerance)
+	if clickY < -1 || clickY >= m.scrollbar.height+1 {
+		slog.Debug("Click outside scrollbar bounds",
+			"clickY", clickY,
+			"scrollbarHeight", m.scrollbar.height)
+		return
+	}
+
+	// Clamp clickY to valid range
+	clickY = max(0, min(m.scrollbar.height-1, clickY))
+	// Check if click is on thumb
+	if clickY >= m.scrollbar.thumbY && clickY < m.scrollbar.thumbY+m.scrollbar.thumbHeight {
+		// Start dragging - track where in the thumb we clicked
+		m.scrollbar.dragging = true
+		m.scrollbar.dragStartY = y
+		m.scrollbar.dragStartThumb = m.scrollbar.thumbY
+		m.scrollbar.dragStartScroll = m.textarea.ScrollOffset()
+		m.scrollbar.dragOffsetInThumb = clickY - m.scrollbar.thumbY
+
+		// Hide cursor while dragging
+		m.textarea.SetScrollbarActive(true)
+
+		slog.Debug("Started dragging scrollbar",
+			"dragStartY", y,
+			"dragStartThumb", m.scrollbar.thumbY,
+			"dragStartScroll", m.scrollbar.dragStartScroll,
+			"dragOffsetInThumb", m.scrollbar.dragOffsetInThumb)
+		return
+	}
+
+	// Click on track - jump to position
+	// Calculate target scroll position based on click
+	totalLines := m.textarea.LineCount()
+	visibleLines := m.textarea.MaxHeight
+	if totalLines > visibleLines {
+		// Calculate scroll position based on click position
+		scrollRatio := float64(clickY) / float64(m.scrollbar.height-1)
+		targetScroll := int(float64(totalLines-visibleLines)*scrollRatio + 0.5)
+		m.textarea.SetScrollOffset(targetScroll)
+		slog.Debug("Jumped to scrollbar position",
+			"clickY", clickY,
+			"scrollRatio", scrollRatio,
+			"targetScroll", targetScroll)
+	}
+}
+
+func (m *editorComponent) handleScrollbarDrag(y int) {
+	if !m.scrollbar.dragging {
+		return
+	}
+
+	// Calculate drag delta
+	dragDelta := y - m.scrollbar.dragStartY
+
+	// Calculate new thumb position
+	newThumbY := m.scrollbar.dragStartThumb + dragDelta
+	maxThumbPos := m.scrollbar.height - m.scrollbar.thumbHeight
+	newThumbY = max(0, min(maxThumbPos, newThumbY))
+
+	// Convert thumb position to scroll offset
+	totalLines := m.textarea.LineCount()
+	visibleLines := m.textarea.MaxHeight
+	if totalLines > visibleLines && maxThumbPos > 0 {
+		scrollRatio := float64(newThumbY) / float64(maxThumbPos)
+		targetScroll := int(float64(totalLines-visibleLines)*scrollRatio + 0.5)
+		m.textarea.SetScrollOffset(targetScroll)
+	}
+}
+
+func (m *editorComponent) renderScrollbar() string {
+	if !m.hasScrollbar() {
+		return ""
+	}
+
+	t := theme.CurrentTheme()
+
+	// Build scrollbar using OpenCode style
+	scrollbar := make([]string, m.scrollbar.height)
+
+	// Create styles for track and thumb
+	trackStyle := lipgloss.NewStyle().
+		Foreground(t.BackgroundElement()).
+		Background(t.Background())
+
+	thumbStyle := lipgloss.NewStyle().
+		Foreground(t.Primary()).
+		Background(t.Background())
+
+	// Build scrollbar
+	for i := 0; i < m.scrollbar.height; i++ {
+		if i >= m.scrollbar.thumbY && i < m.scrollbar.thumbY+m.scrollbar.thumbHeight {
+			// Thumb part - use solid block
+			scrollbar[i] = thumbStyle.Render("█")
+		} else {
+			// Track part - use thin line
+			scrollbar[i] = trackStyle.Render("│")
+		}
+	}
+	return strings.Join(scrollbar, "\n")
+}
+
 func NewEditorComponent(app *app.App) EditorComponent {
 	s := createSpinner()
 	ta := createTextArea(nil)
+
+	// Set MaxHeight for viewport behavior
+	ta.MaxHeight = 8
 
 	return &editorComponent{
 		app:                    app,

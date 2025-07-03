@@ -149,12 +149,6 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd := a.modal.Close()
 				a.modal = nil
 				return a, cmd
-				if cmd != nil {
-					return a, cmd
-				}
-				cmd = a.modal.Close()
-				a.modal = nil
-				return a, cmd
 			}
 
 			// Pass all other key presses to the modal
