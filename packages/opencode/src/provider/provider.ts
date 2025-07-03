@@ -99,11 +99,25 @@ export namespace Provider {
               })
               info.access = tokens.access
             }
+            let isAgentCall = false
+            try {
+              const body =
+                typeof init.body === "string"
+                  ? JSON.parse(init.body)
+                  : init.body
+              if (body?.messages) {
+                isAgentCall = body.messages.some(
+                  (msg: any) =>
+                    msg.role && ["tool", "assistant"].includes(msg.role),
+                )
+              }
+            } catch {}
             const headers = {
               ...init.headers,
               ...copilot.HEADERS,
               Authorization: `Bearer ${info.access}`,
               "Openai-Intent": "conversation-edits",
+              "X-Initiator": isAgentCall ? "agent" : "user",
             }
             delete headers["x-api-key"]
             return fetch(input, {
@@ -191,6 +205,17 @@ export namespace Provider {
         },
       }
     },
+    openrouter: async () => {
+      return {
+        autoload: false,
+        options: {
+          headers: {
+            "HTTP-Referer": "https://opencode.ai/",
+            "X-Title": "opencode",
+          },
+        },
+      }
+    },
   }
 
   const state = App.state("provider", async () => {
@@ -246,6 +271,7 @@ export namespace Provider {
         npm: provider.npm ?? existing?.npm,
         name: provider.name ?? existing?.name ?? providerID,
         env: provider.env ?? existing?.env ?? [],
+        api: provider.api ?? existing?.api,
         models: existing?.models ?? {},
       }
 
@@ -288,9 +314,14 @@ export namespace Provider {
     // load env
     for (const [providerID, provider] of Object.entries(database)) {
       if (disabled.has(providerID)) continue
-      if (provider.env.some((item) => process.env[item])) {
-        mergeProvider(providerID, {}, "env")
-      }
+      const apiKey = provider.env.map((item) => process.env[item]).at(0)
+      if (!apiKey) continue
+      mergeProvider(
+        providerID,
+        // only include apiKey if there's only one potential option
+        provider.env.length === 1 ? { apiKey } : {},
+        "env",
+      )
     }
 
     // load apikeys
